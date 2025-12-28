@@ -11,3 +11,14 @@ export interface CreateTaskRecordInput {
 export interface createTaskRecord {
     (input: CreateTaskRecordInput): Promise<ITask | null>;
 }
+
+export interface RepoSummary {
+  taskId: string;
+  repoUrl: string;
+  languages: string[];
+  framework: string | null;
+  configFiles: string[];
+  packageManager: string;
+  folderStructure: string[];
+  entryPoints: string[];
+}
