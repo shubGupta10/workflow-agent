@@ -1,18 +1,18 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16
-    container_name: coding-agent-postgres
+  mongodb:
+    image: mongo:7
+    container_name: coding-agent-mongodb
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "27017:27017"
     environment:
-      POSTGRES_USER: coding_agent
-      POSTGRES_PASSWORD: coding_agent_password
-      POSTGRES_DB: coding_agent_db
+      MONGO_INITDB_ROOT_USERNAME: coding_agent
+      MONGO_INITDB_ROOT_PASSWORD: coding_agent_password
+      MONGO_INITDB_DATABASE: coding_agent_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mongodb_data:/data/db
   
 volumes:
-  postgres_data:
+  mongodb_data:
