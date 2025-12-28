@@ -107,3 +107,37 @@ export async function generatePlan(taskId: string) {
     return llmResponse;
 
 }
+
+export async function approvePlan(taskId: string, approvedBy: string) {
+    //  validate inputs
+    if (!taskId || !approvedBy) {
+        throw new Error("Missing required fields to approve plan");
+    }
+
+    //fetch task by its taskId
+    const existingTask = await Task.findById(taskId);
+    if (!existingTask) {
+        throw new Error("Task not found");
+    }
+
+    //ensure status is AWAITING_APPROVAL
+    if (existingTask.status !== TaskStatus.AWAITING_APPROVAL) {
+        throw new Error("Task is not in a state to approve plan");
+    }
+
+    //ensure plan exists
+    if (!existingTask.plan) {
+        throw new Error("No plan found to approve");
+    }
+
+    //mark approval
+    existingTask.approvedAt = new Date();
+    existingTask.approvedBy = approvedBy;
+
+    //move task to executing
+    existingTask.status = TaskStatus.EXECUTING;
+
+    await existingTask.save();
+
+    return existingTask;
+}
