@@ -1,4 +1,6 @@
 import { TaskStatus } from '../../constants/enum';
+import { applyFileChanges, cloneRepoInSandbox, commitChange, createAndCheckoutBranch, createPullRequest, pushBranch } from '../../lib/github/repoUtils';
+import { runSandboxCommand, startSandbox, stopSandbox } from '../../lib/sandbox/sandBoxUtils';
 import { buildPlanningPrompt } from '../../llm/llm.prompt';
 import { generateContent } from '../../llm/llm.service';
 import { Task } from './task.model';
@@ -140,4 +142,96 @@ export async function approvePlan(taskId: string, approvedBy: string) {
     await existingTask.save();
 
     return existingTask;
+}
+
+export async function executeTask(taskId: string) {
+    // validate inputs
+    if (!taskId) {
+        throw new Error("Missing taskId to execute task");
+    }
+
+    const existingTask = await Task.findById(taskId);
+    if (!existingTask) {
+        throw new Error("Task not found");
+    }
+
+    //ensure task is in EXECUTING state
+    if (existingTask.status !== TaskStatus.EXECUTING) {
+        throw new Error("Task is not in a state to execute");
+    }
+
+    //ensure plan is approved
+    if (!existingTask.plan || !existingTask.approvedBy) {
+        throw new Error("Plan not approved or missing to execute task");
+    }
+
+    //start sandbox
+    let containerId: string | null = null;
+    const logs: string[] = [];
+
+    try {
+        logs.push("Starting sandbox environment...");
+        containerId = await startSandbox(taskId);
+
+        logs.push(`Cloning repository ${existingTask.repoUrl}...`);
+        await cloneRepoInSandbox(containerId, existingTask.repoUrl);
+
+        const branchName = `task-${taskId}-changes`;
+        logs.push(`Creating and Checking out branch: ${branchName}...`)
+        await createAndCheckoutBranch(containerId, branchName);
+
+        //interate plan
+        if (Array.isArray(existingTask.plan)) {
+            for (const step of existingTask.plan) {
+                logs.push(`Executing step: ${step.description}...`);
+
+                if (step.fileChanges) {
+                    for (const file of step.fileChanges) {
+                        logs.push(`Writing file: ${file.path}`);
+                        await applyFileChanges(containerId, file.path, file.content)
+                    }
+                }
+
+                if (step.command) {
+                    logs.push(`Running command: ${step.command}`);
+                    const output = await runSandboxCommand(containerId, step.command);
+                    logs.push(`Output: ${output.slice(0, 200)}...`);
+                }
+            }
+        }
+
+        logs.push("Committing changes...");
+        await commitChange(containerId, `Task ${taskId} - Applied planned changes`);
+
+        logs.push("Pushing branch to remote...");
+        await pushBranch(containerId, branchName);
+
+        logs.push("Creating Pull Request...");
+        const prUrl = await createPullRequest(
+            existingTask.repoUrl,
+            branchName,
+        )
+
+        existingTask.executionLog = {
+            prUrl,
+            branchName,
+            logs,
+        };
+        existingTask.status = TaskStatus.COMPLETED;
+        await existingTask.save();
+
+        return existingTask;
+
+    } catch (error: any) {
+        console.error("Task Execution Failed:", error);
+        logs.push(`ERROR: ${error.message}`);
+
+        await Task.findByIdAndUpdate(taskId, {
+            status: TaskStatus.FAILED,
+            executionResult: { status: 'FAILED', logs, error: error.message }
+        });
+        throw error;
+    } finally {
+        if (containerId) await stopSandbox(containerId);
+    }
 }
