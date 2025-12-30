@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./lib/db";
+import router from "./routes/Task/task.router";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.get("/", (req, res) => {
         status: "OK"
     })
 })
+
+app.use("/api/v1", router);
 
 const PORT = process.env.PORT || 3000;
 

@@ -8,7 +8,7 @@ import { CreateTaskRecordInput } from './task.types';
 import { createTaskRecord, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
 
 
-export async function createTask(input: CreateTaskRecordInput) {
+const createTask = async (input: CreateTaskRecordInput) => {
     const { repoUrl, userId } = input;
 
     //create task
@@ -34,7 +34,7 @@ export async function createTask(input: CreateTaskRecordInput) {
     return task._id.toString();
 }
 
-export async function setTaskAction(taskId: string, action: string, userInput: string) {
+const setTaskAction = async (taskId: string, action: string, userInput: string) => {
     if (!taskId || !action) {
         throw new Error("Missing required fields to set task action");
     }
@@ -61,7 +61,7 @@ export async function setTaskAction(taskId: string, action: string, userInput: s
     return updatedTask;
 }
 
-export async function generatePlan(taskId: string) {
+const generatePlan = async (taskId: string) => {
     // fetch Task by taskId
     if (!taskId) {
         throw new Error("Missing taskId to generate plan");
@@ -110,7 +110,7 @@ export async function generatePlan(taskId: string) {
 
 }
 
-export async function approvePlan(taskId: string, approvedBy: string) {
+const approvePlan = async (taskId: string, approvedBy: string) => {
     //  validate inputs
     if (!taskId || !approvedBy) {
         throw new Error("Missing required fields to approve plan");
@@ -144,7 +144,7 @@ export async function approvePlan(taskId: string, approvedBy: string) {
     return existingTask;
 }
 
-export async function executeTask(taskId: string) {
+const executeTask = async (taskId: string) => {
     // validate inputs
     if (!taskId) {
         throw new Error("Missing taskId to execute task");
@@ -234,4 +234,12 @@ export async function executeTask(taskId: string) {
     } finally {
         if (containerId) await stopSandbox(containerId);
     }
+}
+
+export const TaskService = {
+    createTask,
+    setTaskAction,
+    generatePlan,
+    approvePlan,
+    executeTask
 }
