@@ -4,7 +4,7 @@ import { TaskStatus } from '../../constants/enum';
 
 export interface CreateTaskRecordInput {
     repoUrl: string;
-    status: TaskStatus,
+    status?: TaskStatus,
     userId?: string
 }
 

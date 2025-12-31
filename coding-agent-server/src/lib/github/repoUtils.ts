@@ -3,31 +3,65 @@ import octokit from '../Octokit';
 import { runSandboxCommand } from '../sandbox/sandBoxUtils';
 
 
-export async function cloneRepoInSandbox(containerName: string, repoUrl: string) {
-    await runSandboxCommand(containerName, `git clone ${repoUrl}`)
+
+function extractRepoName(repoUrl: string): string {
+    const match = repoUrl.match(/\/([^\/]+?)(\.git)?$/);
+    if (!match) {
+        throw new Error("Invalid repository URL");
+    }
+    return match[1];
 }
 
-export async function createAndCheckoutBranch(containerName: string, branchName: string) {
-    await runSandboxCommand(containerName, `git checkout -b ${branchName}`)
+
+function getAuthenticatedRepoUrl(repoUrl: string, token?: string): string {
+    if (!token) return repoUrl;
+    
+    // Convert HTTPS URL to authenticated URL
+    // https://github.com/user/repo.git -> https://token@github.com/user/repo.git
+    const urlMatch = repoUrl.match(/^https:\/\/github\.com\/(.+)$/);
+    if (urlMatch) {
+        return `https://${token}@github.com/${urlMatch[1]}`;
+    }
+    
+    return repoUrl;
 }
 
-export async function commitChange(containerName: string, message: string) {
-    await runSandboxCommand(containerName, `git config user.email "bot@ai-dev.com" && git config user.name "AI Dev Bot"`)
-    await runSandboxCommand(containerName, `git add .`);
-    await runSandboxCommand(containerName, `git commit -m "${message}`)
+export async function cloneRepoInSandbox(containerName: string, repoUrl: string, githubToken?: string) {
+    const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
+    await runSandboxCommand(containerName, `git clone ${authUrl}`)
+    return extractRepoName(repoUrl); 
 }
 
-export async function pushBranch(containerName: string, branchName: string) {
-    await runSandboxCommand(containerName, `git push origin ${branchName}`)
+export async function createAndCheckoutBranch(containerName: string, branchName: string, repoName: string) {
+    await runSandboxCommand(containerName, `cd ${repoName} && git checkout -b ${branchName}`)
 }
 
-export async function applyFileChanges(containerName: string, filePath: string, content: string) {
+export async function commitChange(containerName: string, message: string, repoName: string) {
+    await runSandboxCommand(containerName, `cd ${repoName} && git config user.email "bot@ai-dev.com" && git config user.name "AI Dev Bot"`)
+    await runSandboxCommand(containerName, `cd ${repoName} && git add .`);
+    await runSandboxCommand(containerName, `cd ${repoName} && git commit -m "${message}"`)
+}
+
+export async function pushBranch(containerName: string, branchName: string, repoName: string, githubToken?: string, repoUrl?: string) {
+    // If token provided, update remote URL to use authentication
+    if (githubToken && repoUrl) {
+        const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
+        await runSandboxCommand(containerName, `cd ${repoName} && git remote set-url origin ${authUrl}`);
+    }
+    
+    await runSandboxCommand(containerName, `cd ${repoName} && git push origin ${branchName}`)
+}
+
+export async function applyFileChanges(containerName: string, filePath: string, content: string, repoName: string) {
     const base64Content = Buffer.from(content).toString('base64');
+
+    // Ensure the file path is relative to the repo directory
+    const fullPath = `${repoName}/${filePath}`;
 
     const writeScript = `
       const fs = require('fs');
       const path = require('path');
-      const target = '${filePath}';
+      const target = '${fullPath}';
       const content = Buffer.from('${base64Content}', 'base64');
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.writeFileSync(target, content);
@@ -39,6 +73,7 @@ export async function applyFileChanges(containerName: string, filePath: string, 
 export async function createPullRequest(
     repoUrl: string,
     branchName: string,
+    githubToken?: string,
     title?: string,
     body?: string,
     base: string = 'main'
@@ -53,8 +88,12 @@ export async function createPullRequest(
     const owner = match[1];
     const repo = match[2];
 
+    // Use token-specific octokit instance
+    const { createOctokit } = require('../Octokit');
+    const octokitInstance = createOctokit(githubToken);
+
     try {
-        const response = await octokit.pulls.create({
+        const response = await octokitInstance.pulls.create({
             owner,
             repo,
             title: title || `Automated PR from Coding Agent - ${branchName}`,
@@ -67,7 +106,7 @@ export async function createPullRequest(
 
     } catch (error: any) {
         if (error.status === 422 && error.message.includes("A pull request already exists")) {
-            const existingPrs = await octokit.pulls.list({
+            const existingPrs = await octokitInstance.pulls.list({
                 owner,
                 repo,
                 head: `${owner}:${branchName}`,

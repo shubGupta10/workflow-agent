@@ -25,7 +25,7 @@ export interface ITask extends Document {
   action?: TaskAction;
   userInput?: Record<string, unknown>;
   repoSummary?: Record<string, unknown>;
-  plan?: Record<string, unknown>;
+  plan?: string | Record<string, unknown>;
   planVersion: number;
   approvedAt?: Date;
   approvedBy?: string;

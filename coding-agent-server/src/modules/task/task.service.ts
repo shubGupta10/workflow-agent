@@ -5,7 +5,7 @@ import { buildPlanningPrompt } from '../../llm/llm.prompt';
 import { generateContent } from '../../llm/llm.service';
 import { Task } from './task.model';
 import { CreateTaskRecordInput } from './task.types';
-import { createTaskRecord, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
+import { createTaskRecord, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
 
 
 const createTask = async (input: CreateTaskRecordInput) => {
@@ -52,7 +52,7 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
         taskId,
         {
             action,
-            userInput: JSON.parse(userInput),
+            userInput: userInput,
             status: TaskStatus.PLANNING
         },
         { new: true }
@@ -99,7 +99,7 @@ const generatePlan = async (taskId: string) => {
     await Task.findByIdAndUpdate(
         taskId,
         {
-            plan: JSON.parse(llmResponse),
+            plan: llmResponse,
             status: TaskStatus.AWAITING_APPROVAL,
             updatedAt: new Date()
         },
@@ -155,6 +155,29 @@ const executeTask = async (taskId: string) => {
         throw new Error("Task not found");
     }
 
+    // Get GitHub token for push operations
+    let githubToken: string | undefined;
+    
+    // Only query user if userId is a valid MongoDB ObjectId
+    if (existingTask.userId && /^[0-9a-fA-F]{24}$/.test(existingTask.userId)) {
+        try {
+            const { User } = require('../user/user.model');
+            const user = await User.findById(existingTask.userId).select('+githubAccessToken');
+            githubToken = user?.githubAccessToken;
+        } catch (err) {
+            console.warn('[WARNING] Failed to fetch user GitHub token:', err);
+        }
+    }
+    
+    // Fallback to environment variable for testing (until OAuth is implemented)
+    if (!githubToken) {
+        githubToken = process.env.GITHUB_ACCESS_TOKEN;
+        if (!githubToken) {
+            console.warn('[WARNING] No GitHub token available. Push and PR creation will fail.');
+            console.warn('[INFO] Add GITHUB_ACCESS_TOKEN to .env or implement OAuth to enable these features.');
+        }
+    }
+
     //ensure task is in EXECUTING state
     if (existingTask.status !== TaskStatus.EXECUTING) {
         throw new Error("Task is not in a state to execute");
@@ -165,8 +188,15 @@ const executeTask = async (taskId: string) => {
         throw new Error("Plan not approved or missing to execute task");
     }
 
+    //generate code from plan
+    const excutablePlan = await generateCodeFromPlan(
+        (existingTask.plan as unknown) as string, 
+        existingTask.repoUrl
+    )
+
     //start sandbox
     let containerId: string | null = null;
+    let repoName: string | null = null;
     const logs: string[] = [];
 
     try {
@@ -174,43 +204,46 @@ const executeTask = async (taskId: string) => {
         containerId = await startSandbox(taskId);
 
         logs.push(`Cloning repository ${existingTask.repoUrl}...`);
-        await cloneRepoInSandbox(containerId, existingTask.repoUrl);
+        repoName = await cloneRepoInSandbox(containerId, existingTask.repoUrl, githubToken);
+        logs.push(`Repository cloned as: ${repoName}`);
 
         const branchName = `task-${taskId}-changes`;
         logs.push(`Creating and Checking out branch: ${branchName}...`)
-        await createAndCheckoutBranch(containerId, branchName);
+        await createAndCheckoutBranch(containerId, branchName, repoName);
 
         //interate plan
-        if (Array.isArray(existingTask.plan)) {
-            for (const step of existingTask.plan) {
+        if (Array.isArray(excutablePlan) && repoName) {
+            for (const step of excutablePlan) {
                 logs.push(`Executing step: ${step.description}...`);
 
                 if (step.fileChanges) {
                     for (const file of step.fileChanges) {
                         logs.push(`Writing file: ${file.path}`);
-                        await applyFileChanges(containerId, file.path, file.content)
+                        await applyFileChanges(containerId, file.path, file.content, repoName)
                     }
                 }
 
                 if (step.command) {
                     logs.push(`Running command: ${step.command}`);
-                    const output = await runSandboxCommand(containerId, step.command);
+                    // Ensure commands run inside the repo directory
+                    const output = await runSandboxCommand(containerId, `cd ${repoName} && ${step.command}`);
                     logs.push(`Output: ${output.slice(0, 200)}...`);
                 }
             }
         }
 
         logs.push("Committing changes...");
-        await commitChange(containerId, `Task ${taskId} - Applied planned changes`);
+        await commitChange(containerId, `Task ${taskId} - Applied planned changes`, repoName!);
 
         logs.push("Pushing branch to remote...");
-        await pushBranch(containerId, branchName);
+        await pushBranch(containerId, branchName, repoName!, githubToken, existingTask.repoUrl);
 
         logs.push("Creating Pull Request...");
         const prUrl = await createPullRequest(
             existingTask.repoUrl,
             branchName,
-        )
+            githubToken
+        );
 
         existingTask.executionLog = {
             prUrl,

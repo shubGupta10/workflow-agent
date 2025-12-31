@@ -4,9 +4,9 @@ import { TaskService } from "./task.service";
 
 const createTask = errorWrapper(
     async (req: Request, res: Response) => {
-        const { repoUrl, status, userId } = req.body;
+        const { repoUrl, userId } = req.body;
 
-        const task = await TaskService.createTask({ repoUrl, status, userId });
+        const task = await TaskService.createTask({ repoUrl, userId });
         res.status(201).json({
             message: "Task created successfully",
             data: task
