@@ -1,11 +1,11 @@
 import { TaskStatus } from '../../constants/enum';
 import { applyFileChanges, cloneRepoInSandbox, commitChange, createAndCheckoutBranch, createPullRequest, pushBranch } from '../../lib/github/repoUtils';
 import { runSandboxCommand, startSandbox, stopSandbox } from '../../lib/sandbox/sandBoxUtils';
-import { buildPlanningPrompt } from '../../llm/llm.prompt';
+import { buildPlanningPrompt, buildReviewPrompt } from '../../llm/llm.prompt';
 import { generateContent } from '../../llm/llm.service';
-import { Task } from './task.model';
+import { Task, TaskAction } from './task.model';
 import { CreateTaskRecordInput } from './task.types';
-import { createTaskRecord, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
+import { createTaskRecord, fetchPRsDiff, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
 
 
 const createTask = async (input: CreateTaskRecordInput) => {
@@ -83,11 +83,40 @@ const generatePlan = async (taskId: string) => {
     }
 
     //  build planning prompt
-    const prompt = await buildPlanningPrompt({
-        repoSummary: existingTask.repoSummary,
-        action: existingTask.action,
-        userInput: existingTask.userInput ? JSON.stringify(existingTask.userInput) : undefined
-    })
+    let prompt;
+    let nextStatus = TaskStatus.AWAITING_APPROVAL;
+
+    if (existingTask.action === TaskAction.REVIEW_PR) {
+        let prUrl = existingTask.userInput || "";
+        try {
+            const parsed = JSON.parse(prUrl as string);
+            if (parsed.prUrl) prUrl = parsed.prUrl;
+        } catch (error) {
+            // ignore JSON parse error
+        }
+
+
+        const diff = await fetchPRsDiff(prUrl as string);
+
+        prompt = buildReviewPrompt({
+            repoSummary: existingTask.repoSummary,
+            diff: diff,
+            userInput: typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput)
+        });
+
+        nextStatus = TaskStatus.COMPLETED
+    } else {
+        prompt = await buildPlanningPrompt({
+            repoSummary: existingTask.repoSummary,
+            action: existingTask.action,
+            // Ensure userInput is a string for the prompt
+            userInput: existingTask.userInput
+                ? (typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput))
+                : undefined
+        });
+
+        nextStatus = TaskStatus.AWAITING_APPROVAL;
+    }
 
     //  call LLM
     const llmResponse = await generateContent(prompt);
@@ -100,14 +129,17 @@ const generatePlan = async (taskId: string) => {
         taskId,
         {
             plan: llmResponse,
-            status: TaskStatus.AWAITING_APPROVAL,
-            updatedAt: new Date()
+            status: nextStatus,
+            updatedAt: new Date(),
+            ...(nextStatus === TaskStatus.COMPLETED ? {
+                result: { review: llmResponse },
+                executionLog: { message: "Review generated successfully. No execution required." }
+            } : {})
         },
         { new: true }
     )
 
     return llmResponse;
-
 }
 
 const approvePlan = async (taskId: string, approvedBy: string) => {
@@ -157,7 +189,7 @@ const executeTask = async (taskId: string) => {
 
     // Get GitHub token for push operations
     let githubToken: string | undefined;
-    
+
     // Only query user if userId is a valid MongoDB ObjectId
     if (existingTask.userId && /^[0-9a-fA-F]{24}$/.test(existingTask.userId)) {
         try {
@@ -168,7 +200,7 @@ const executeTask = async (taskId: string) => {
             console.warn('[WARNING] Failed to fetch user GitHub token:', err);
         }
     }
-    
+
     // Fallback to environment variable for testing (until OAuth is implemented)
     if (!githubToken) {
         githubToken = process.env.GITHUB_ACCESS_TOKEN;
@@ -190,7 +222,7 @@ const executeTask = async (taskId: string) => {
 
     //generate code from plan
     const excutablePlan = await generateCodeFromPlan(
-        (existingTask.plan as unknown) as string, 
+        (existingTask.plan as unknown) as string,
         existingTask.repoUrl
     )
 

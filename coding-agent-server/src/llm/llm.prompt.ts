@@ -76,3 +76,40 @@ FINAL NOTES:
 - Anything the user should review before approval
 `;
 }
+
+export function buildReviewPrompt(input: {
+    repoSummary: any;
+    diff: string;
+    userInput?: string;
+}) {
+    return `
+You are a senior software architect reviewing a Pull Request.
+
+====================================
+REPOSITORY CONTEXT
+====================================
+${JSON.stringify(input.repoSummary, null, 2)}
+
+====================================
+THE CODE CHANGES (DIFF)
+====================================
+${input.diff.slice(0, 15000)} 
+(Diff truncated if too long)
+
+====================================
+USER NOTES
+====================================
+${input.userInput || "No specific instructions."}
+
+====================================
+YOUR TASK
+====================================
+Review the code changes above. Focus on:
+1. Bugs or Logic Errors
+2. Security Vulnerabilities
+3. Code Style & Best Practices
+4. Performance Issues
+
+Produce a concise, constructive code review.
+`;
+}

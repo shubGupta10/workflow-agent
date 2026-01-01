@@ -2,6 +2,7 @@ import { CreateTaskRecordInput, RepoSummary } from "./task.types";
 import { Task } from "./task.model";
 import { execAsync, INTERNAL_ANALYSIS_SCRIPT } from "../../constants/repoIngest";
 import { generateContent } from "../../llm/llm.service";
+import octokit from "../../lib/Octokit";
 
 export async function createTaskRecord(taskData: CreateTaskRecordInput) {
     const { repoUrl, status, userId } = taskData;
@@ -154,47 +155,47 @@ export async function generateCodeFromPlan(plan: string, repoUrl: string) {
     START YOUR RESPONSE WITH [ AND END WITH ] - NO OTHER TEXT.
     `;
 
-    const response = await generateContent(prompt); 
-    
+    const response = await generateContent(prompt);
+
     console.log('[DEBUG] Raw LLM Response (first 500 chars):', response.substring(0, 500));
-    
+
     // Remove markdown code blocks if present
     let cleanJson = response.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    
+
     // Remove any leading/trailing text that's not part of JSON
     const jsonStart = cleanJson.indexOf('[');
     const jsonEnd = cleanJson.lastIndexOf(']');
-    
+
     if (jsonStart === -1 || jsonEnd === -1) {
         console.error('[ERROR] No valid JSON array found in response');
         console.error('[ERROR] Response:', cleanJson.substring(0, 500));
         throw new Error("LLM response does not contain a valid JSON array");
     }
-    
+
     cleanJson = cleanJson.substring(jsonStart, jsonEnd + 1);
-    
+
     console.log('[DEBUG] Cleaned JSON (first 500 chars):', cleanJson.substring(0, 500));
-    
+
     try {
         const parsed = JSON.parse(cleanJson);
-        
+
         // Validate the structure
         if (!Array.isArray(parsed)) {
             throw new Error("Response is not an array");
         }
-        
+
         for (const step of parsed) {
             if (!step.description) {
                 throw new Error("Step missing required 'description' field");
             }
         }
-        
+
         console.log(`[DEBUG] Successfully parsed ${parsed.length} steps`);
         return parsed;
     } catch (e: any) {
         console.error('[ERROR] JSON Parse Error:', e.message);
         console.error('[ERROR] Failed JSON (first 1000 chars):', cleanJson.substring(0, 1000));
-        
+
         // Try to provide a helpful error message
         const match = e.message.match(/position (\d+)/);
         if (match) {
@@ -202,7 +203,33 @@ export async function generateCodeFromPlan(plan: string, repoUrl: string) {
             const context = cleanJson.substring(Math.max(0, pos - 50), Math.min(cleanJson.length, pos + 50));
             console.error(`[ERROR] Error near position ${pos}: ...${context}...`);
         }
-        
+
         throw new Error(`Failed to parse LLM response as JSON: ${e.message}. Check server logs for details.`);
+    }
+}
+
+export async function fetchPRsDiff(prUrl: string) {
+    const regex = /github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)/;
+    const match = prUrl.match(regex);
+
+    if (!match) {
+        throw new Error("Invalid GitHub PR URL");
+    }
+
+    const [_, owner, repo, pull_Number] = match;
+
+    try {
+        const response = await octokit.pulls.get({
+            owner,
+            repo,
+            pull_number: parseInt(pull_Number),
+            mediaType: {
+                format: "diff"
+            }
+        });
+
+        return response.data as unknown as string
+    } catch (error: any) {
+        throw new Error(`Failed to fetch PR diff: ${error.message}`);
     }
 }
