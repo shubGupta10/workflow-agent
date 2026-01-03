@@ -1,10 +1,12 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { errorWrapper } from "../../middleware/errorWrapper";
 import { TaskService } from "./task.service";
+import { AuthRequest } from "../../middleware/auth.middleware";
 
 const createTask = errorWrapper(
-    async (req: Request, res: Response) => {
-        const { repoUrl, userId } = req.body;
+    async (req: AuthRequest, res: Response) => {
+        const { repoUrl } = req.body;
+        const userId = req.user.userId;
 
         const task = await TaskService.createTask({ repoUrl, userId });
         res.status(201).json({
@@ -15,7 +17,7 @@ const createTask = errorWrapper(
 )
 
 const setTaskAction = errorWrapper(
-    async (req: Request, res: Response) => {
+    async (req: AuthRequest, res: Response) => {
         const { taskId, action, userInput } = req.body;
         const updatedTask = await TaskService.setTaskAction(taskId, action, userInput);
         res.status(200).json({
@@ -26,7 +28,7 @@ const setTaskAction = errorWrapper(
 )
 
 const generatePlan = errorWrapper(
-    async (req: Request, res: Response) => {
+    async (req: AuthRequest, res: Response) => {
         const { taskId } = req.params;
         const plan = await TaskService.generatePlan(taskId);
         res.status(200).json({
@@ -37,7 +39,7 @@ const generatePlan = errorWrapper(
 )
 
 const approvePlan = errorWrapper(
-    async (req: Request, res: Response) => {
+    async (req: AuthRequest, res: Response) => {
         const { taskId, approvedBy } = req.body;
         const updatedTask = await TaskService.approvePlan(taskId, approvedBy);
         res.status(200).json({
@@ -48,7 +50,7 @@ const approvePlan = errorWrapper(
 )
 
 const executeTask = errorWrapper(
-    async (req: Request, res: Response) => {
+    async (req: AuthRequest, res: Response) => {
         const { taskId } = req.params;
         const executionResult = await TaskService.executeTask(taskId);
         res.status(200).json({

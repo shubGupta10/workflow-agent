@@ -12,7 +12,6 @@ function extractRepoName(repoUrl: string): string {
     return match[1];
 }
 
-
 function getAuthenticatedRepoUrl(repoUrl: string, token?: string): string {
     if (!token) return repoUrl;
     

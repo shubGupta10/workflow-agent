@@ -4,7 +4,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   githubId?: string;
-  githubAccessToken?: string; // OAuth token for GitHub operations
+  githubAccessToken?: string; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +27,7 @@ const userSchema = new Schema<IUser>(
     },
     githubAccessToken: {
       type: String,
-      select: false, // Don't return token in queries by default for security
+      select: false, 
     },
   },
   {

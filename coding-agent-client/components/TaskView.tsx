@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTaskStore } from "@/lib/store";
+import { useTaskStore } from "@/lib/store/store";
+import { useAuthStore } from "@/lib/store/userStore";
 import { ActionType, Message } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "./ChatMessage";
@@ -22,6 +23,7 @@ import {
 } from "@/app/actions";
 
 export function TaskView() {
+    const { user, fetchCurrentUser } = useAuthStore();
     const {
         sessions,
         activeSessionId,
@@ -42,6 +44,19 @@ export function TaskView() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const activeSession = getActiveSession();
+
+    // Fetch user data on mount
+    useEffect(() => {
+        console.log('[TaskView] Component mounted, checking if user is loaded...');
+        if (!user) {
+            console.log('[TaskView] User not loaded, fetching...');
+            fetchCurrentUser().catch(err => {
+                console.error('[TaskView] Failed to fetch user:', err);
+            });
+        } else {
+            console.log('[TaskView] User already loaded:', user);
+        }
+    }, []);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -104,7 +119,14 @@ export function TaskView() {
             setIsLoading(true);
             addMessage(activeSession.id, { type: "loading", content: "Analyzing repository…" });
 
-            const result = await createTaskAction(input);
+            if (!user?._id) {
+                removeLastMessage(activeSession.id);
+                addMessage(activeSession.id, { type: "system", content: "Please log in to continue", systemType: "error" });
+                setIsLoading(false);
+                return;
+            }
+
+            const result = await createTaskAction(input, user._id);
             removeLastMessage(activeSession.id);
 
             if (result.success && result.data) {
@@ -265,7 +287,14 @@ export function TaskView() {
         setIsLoading(true);
         addMessage(activeSession.id, { type: "loading", content: "Approving plan…" });
 
-        const approveResult = await approvePlanAction(taskId);
+        if (!user?._id) {
+            removeLastMessage(activeSession.id);
+            addMessage(activeSession.id, { type: "system", content: "Please log in to continue", systemType: "error" });
+            setIsLoading(false);
+            return;
+        }
+
+        const approveResult = await approvePlanAction(taskId, user._id);
 
         if (!approveResult.success) {
             removeLastMessage(activeSession.id);

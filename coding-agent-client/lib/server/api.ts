@@ -1,8 +1,28 @@
-const appURl = process.env.BACKEND_URL;
+import { getToken } from '../auth';
+
+const appURl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 if (process.env.NODE_ENV === 'development') {
     console.log('[API] Backend URL:', appURl || 'NOT SET');
 }
+
+/**
+ * Get common headers including authorization if token exists
+ */
+const getHeaders = () => {
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+    };
+
+    const token = getToken();
+    console.log('[getHeaders] Token:', token ? "EXISTS" : "MISSING");
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+        console.log('[getHeaders] Authorization header added');
+    }
+
+    return headers;
+};
 
 export const createTask = async (repoUrl: string, userId: string) => {
     console.log('[API] createTask called with:', { repoUrl, userId, backendUrl: appURl });
@@ -16,9 +36,7 @@ export const createTask = async (repoUrl: string, userId: string) => {
 
     const response = await fetch(url, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: getHeaders(),
         body: JSON.stringify({
             repoUrl,
             userId
@@ -48,9 +66,7 @@ export const setTask = async (taskId: string, action: string, userInput: string)
     const url = `${appURl}/api/v1/tasks/set-action`;
     const response = await fetch(url, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: getHeaders(),
         body: JSON.stringify({
             taskId,
             action,
@@ -81,9 +97,7 @@ export const generatePlan = async (taskId: string) => {
     const url = `${appURl}/api/v1/tasks/generate-plan/${taskId}`;
     const response = await fetch(url, {
         method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
+        headers: getHeaders()
     });
 
     console.log('[API] generatePlan response status:', response.status);
@@ -109,9 +123,7 @@ export const approvePlan = async (taskId: string, approvedBy: string) => {
     const url = `${appURl}/api/v1/tasks/approve-plan`;
     const response = await fetch(url, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: getHeaders(),
         body: JSON.stringify({
             taskId,
             approvedBy
@@ -141,9 +153,7 @@ export const executeTask = async (taskId: string) => {
     const url = `${appURl}/api/v1/tasks/execute/${taskId}`;
     const response = await fetch(url, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        }
+        headers: getHeaders()
     });
 
     console.log('[API] executeTask response status:', response.status);
@@ -158,3 +168,43 @@ export const executeTask = async (taskId: string) => {
     console.log('[API] executeTask response:', data);
     return data;
 }
+
+
+export const getMe = async () => {
+  const token = getToken();
+  console.log("[getMe] Token:", token ? "EXISTS" : "MISSING");
+  
+
+  if (!token) {
+    throw new Error("No token found");
+  }
+
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  console.log("[getMe] Fetching from:", `${backendUrl}/api/auth/me`);
+
+  const res = await fetch(
+    `${backendUrl}/api/auth/me`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  console.log("[getMe] Response status:", res.status);
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error("[getMe] Error response:", text);
+    throw new Error("Not authenticated");
+  }
+
+  const data = await res.json();
+  console.log("[getMe] Response data:", data);
+  
+  // Backend returns {success: true, user: {...}}, extract just the user
+  const user = data.user || data;
+  console.log("[getMe] Extracted user:", user);
+  
+  return user;
+};

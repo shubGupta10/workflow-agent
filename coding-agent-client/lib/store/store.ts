@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Session, TaskStatus, ActionType, Message, generateId } from './types';
+import { Session, TaskStatus, ActionType, Message, generateId } from '../types';
 
 interface TaskStore {
     sessions: Session[];

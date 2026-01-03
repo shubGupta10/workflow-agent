@@ -1,6 +1,6 @@
 "use client";
 
-import { useTaskStore } from "@/lib/store";
+import { useTaskStore } from "@/lib/store/store";
 import { STATUS_LABELS, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

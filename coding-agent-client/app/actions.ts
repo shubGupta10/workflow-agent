@@ -1,14 +1,13 @@
-"use server";
+'use client';
 
 import { createTask, setTask, generatePlan, approvePlan, executeTask } from "@/lib/server/api";
 
-// HARDCODED: Demo user ID - replace with actual auth when implemented
-const DEMO_USER_ID = "demo-user-001";
-
-export async function createTaskAction(repoUrl: string) {
+export async function createTaskAction(repoUrl: string, userId: string) {
     try {
-        // HARDCODED: Using demo user ID
-        const result = await createTask(repoUrl, DEMO_USER_ID);
+        if (!userId) {
+            return { success: false, error: "User not authenticated" };
+        }
+        const result = await createTask(repoUrl, userId);
         return { success: true, data: result };
     } catch (error) {
         console.error("createTaskAction error:", error);
@@ -36,10 +35,12 @@ export async function generatePlanAction(taskId: string) {
     }
 }
 
-export async function approvePlanAction(taskId: string) {
+export async function approvePlanAction(taskId: string, userId: string) {
     try {
-        // HARDCODED: Using demo user ID for approval
-        const result = await approvePlan(taskId, DEMO_USER_ID);
+        if (!userId) {
+            return { success: false, error: "User not authenticated" };
+        }
+        const result = await approvePlan(taskId, userId);
         return { success: true, data: result };
     } catch (error) {
         console.error("approvePlanAction error:", error);
