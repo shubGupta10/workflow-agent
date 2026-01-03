@@ -29,13 +29,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
   fetchCurrentUser: async () => {
     set({ isLoading: true, error: null });
     try {
-      console.log('[UserStore] Fetching current user...');
       const user = await getMe();
-      console.log('[UserStore] User fetched:', user);
       set({ user, isLoading: false });
-      console.log('[UserStore] User stored in Zustand');
     } catch (error: any) {
-      console.error('[UserStore] Failed to fetch user:', error);
       set({ 
         user: null, 
         isLoading: false, 

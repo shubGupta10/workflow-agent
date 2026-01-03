@@ -15,7 +15,6 @@ export default function OAuthCallbackPage() {
   useEffect(() => {
     const handleAuth = async () => {
       const token = searchParams.get('token');
-      console.log('[Callback] Token from URL:', token ? 'EXISTS' : 'MISSING');
 
       if (!token) {
         setError('No authentication token received. Please try logging in again.');
@@ -26,17 +25,13 @@ export default function OAuthCallbackPage() {
       try {
         // Store token
         setToken(token);
-        console.log('[Callback] Token stored in localStorage');
 
         // Fetch and store user data
-        console.log('[Callback] Fetching current user...');
         await fetchCurrentUser();
-        console.log('[Callback] User fetched and stored');
 
         // Redirect to home page
         router.push('/');
       } catch (err) {
-        console.error('[Callback] Error:', err);
         setError('Failed to process authentication. Please try again.');
         setIsLoading(false);
       }

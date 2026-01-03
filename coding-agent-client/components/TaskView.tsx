@@ -47,14 +47,10 @@ export function TaskView() {
 
     // Fetch user data on mount
     useEffect(() => {
-        console.log('[TaskView] Component mounted, checking if user is loaded...');
         if (!user) {
-            console.log('[TaskView] User not loaded, fetching...');
             fetchCurrentUser().catch(err => {
                 console.error('[TaskView] Failed to fetch user:', err);
             });
-        } else {
-            console.log('[TaskView] User already loaded:', user);
         }
     }, []);
 
@@ -72,7 +68,6 @@ export function TaskView() {
 
     useEffect(() => {
         if (activeSession?.taskId && currentTaskId !== activeSession.taskId) {
-            console.log('[TaskView] Syncing taskId from session to store:', activeSession.taskId);
             setCurrentTaskId(activeSession.taskId);
         }
     }, [activeSession?.taskId, currentTaskId, setCurrentTaskId]);
