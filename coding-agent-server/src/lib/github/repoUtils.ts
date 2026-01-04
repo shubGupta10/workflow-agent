@@ -42,6 +42,9 @@ export async function commitChange(containerName: string, message: string, repoN
 }
 
 export async function pushBranch(containerName: string, branchName: string, repoName: string, githubToken?: string, repoUrl?: string) {
+    console.log('[DEBUG] pushBranch - Token received:', githubToken ? 'YES (length: ' + githubToken.length + ')' : 'NO');
+    console.log('[DEBUG] pushBranch - repoUrl:', repoUrl);
+    
     // Configure git credentials if token is provided
     if (githubToken) {
         // Store token as git credential
@@ -54,7 +57,12 @@ export async function pushBranch(containerName: string, branchName: string, repo
     // Update remote URL to authenticated version if we have both token and URL
     if (githubToken && repoUrl) {
         const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
+        console.log('[DEBUG] Setting remote URL with token');
         await runSandboxCommand(containerName, `cd ${repoName} && git remote set-url origin ${authUrl}`);
+        
+        // Verify the remote URL was set
+        const remoteCheck = await runSandboxCommand(containerName, `cd ${repoName} && git remote get-url origin`);
+        console.log('[DEBUG] Remote URL after setting:', remoteCheck.includes('@') ? 'Has token embedded' : 'NO TOKEN');
     }
     
     await runSandboxCommand(containerName, `cd ${repoName} && git push origin ${branchName}`)
