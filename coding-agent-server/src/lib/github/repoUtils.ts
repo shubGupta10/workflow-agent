@@ -1,7 +1,6 @@
 import { execAsync } from '../../constants/repoIngest';
-import octokit from '../Octokit';
+import octokit, { createOctokit } from '../Octokit';
 import { runSandboxCommand } from '../sandbox/sandBoxUtils';
-
 
 
 function extractRepoName(repoUrl: string): string {
@@ -27,8 +26,16 @@ function getAuthenticatedRepoUrl(repoUrl: string, token?: string): string {
 
 export async function cloneRepoInSandbox(containerName: string, repoUrl: string, githubToken?: string) {
     const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
-    await runSandboxCommand(containerName, `git clone ${authUrl}`)
-    return extractRepoName(repoUrl); 
+    
+    // 1. Clone
+    await runSandboxCommand(containerName, `git clone ${authUrl}`);
+
+    // 2. Configure Identity for repo (This prevents "Author identity unknown")
+    const repoName = extractRepoName(repoUrl);
+    await runSandboxCommand(containerName, `cd ${repoName} && git config user.email "agent@bot.com"`);
+    await runSandboxCommand(containerName, `cd ${repoName} && git config user.name "Coding Agent"`);
+
+    return repoName; 
 }
 
 export async function createAndCheckoutBranch(containerName: string, branchName: string, repoName: string) {
@@ -36,42 +43,39 @@ export async function createAndCheckoutBranch(containerName: string, branchName:
 }
 
 export async function commitChange(containerName: string, message: string, repoName: string) {
-    await runSandboxCommand(containerName, `cd ${repoName} && git config user.email "bot@ai-dev.com" && git config user.name "AI Dev Bot"`)
     await runSandboxCommand(containerName, `cd ${repoName} && git add .`);
-    await runSandboxCommand(containerName, `cd ${repoName} && git commit -m "${message}"`)
+    await runSandboxCommand(containerName, `cd ${repoName} && git commit -m "${message}"`);
 }
 
-export async function pushBranch(containerName: string, branchName: string, repoName: string, githubToken?: string, repoUrl?: string) {
-    console.log('[DEBUG] pushBranch - Token received:', githubToken ? 'YES (length: ' + githubToken.length + ')' : 'NO');
-    console.log('[DEBUG] pushBranch - repoUrl:', repoUrl);
-    
-    // Configure git credentials if token is provided
-    if (githubToken) {
-        // Store token as git credential
-        await runSandboxCommand(containerName, `git config --global credential.helper store`);
-        
-        const credsFile = `echo "https://${githubToken}@github.com" > ~/.git-credentials`;
-        await runSandboxCommand(containerName, credsFile);
+export async function pushBranch(containerName: string, branchName: string, repoName: string, githubToken?: string) {
+    if (!githubToken) {
+        await runSandboxCommand(containerName, `cd ${repoName} && git push origin ${branchName}`);
+        return;
     }
+
+    const remoteUrl = await runSandboxCommand(containerName, `cd ${repoName} && git remote get-url origin`);
     
-    // Update remote URL to authenticated version if we have both token and URL
-    if (githubToken && repoUrl) {
-        const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
-        console.log('[DEBUG] Setting remote URL with token');
-        await runSandboxCommand(containerName, `cd ${repoName} && git remote set-url origin ${authUrl}`);
-        
-        // Verify the remote URL was set
-        const remoteCheck = await runSandboxCommand(containerName, `cd ${repoName} && git remote get-url origin`);
-        console.log('[DEBUG] Remote URL after setting:', remoteCheck.includes('@') ? 'Has token embedded' : 'NO TOKEN');
-    }
+    // Parse remote URL to extract owner/repo (e.g., github.com/owner/repo.git or github.com/owner/repo)
+    const match = remoteUrl.trim().match(/github\.com[\/:]([^\/]+)\/(.+?)(\.git)?$/);
+    if (!match) throw new Error("Could not parse remote URL");
     
-    await runSandboxCommand(containerName, `cd ${repoName} && git push origin ${branchName}`)
+    const owner = match[1];
+    const repo = match[2];
+    
+    // Configure git credential helper to use the token
+    // Using 'x-access-token' as username is a GitHub-recommended approach for tokens
+    const authUrl = `https://x-access-token:${githubToken}@github.com/${owner}/${repo}.git`;
+    
+    // Store credentials temporarily in git config for this operation
+    await runSandboxCommand(containerName, `cd ${repoName} && git config credential.helper store`);
+    
+    // Push using authenticated URL
+    await runSandboxCommand(containerName, `cd ${repoName} && git push "${authUrl}" ${branchName}`);
 }
 
 export async function applyFileChanges(containerName: string, filePath: string, content: string, repoName: string) {
     const base64Content = Buffer.from(content).toString('base64');
 
-    // Ensure the file path is relative to the repo directory
     const fullPath = `${repoName}/${filePath}`;
 
     const writeScript = `
@@ -104,8 +108,6 @@ export async function createPullRequest(
     const owner = match[1];
     const repo = match[2];
 
-    // Use token-specific octokit instance
-    const { createOctokit } = require('../Octokit');
     const octokitInstance = createOctokit(githubToken);
 
     try {

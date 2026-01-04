@@ -303,7 +303,7 @@ const executeTask = async (taskId: string) => {
         await commitChange(containerId, `Task ${taskId} - Applied planned changes`, repoName!);
 
         logs.push("Pushing branch to remote...");
-        await pushBranch(containerId, branchName, repoName!, githubToken, existingTask.repoUrl);
+        await pushBranch(containerId, branchName, repoName!, githubToken);
 
         logs.push("Creating Pull Request...");
         const prUrl = await createPullRequest(
