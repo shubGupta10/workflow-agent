@@ -42,7 +42,16 @@ export async function commitChange(containerName: string, message: string, repoN
 }
 
 export async function pushBranch(containerName: string, branchName: string, repoName: string, githubToken?: string, repoUrl?: string) {
-    // If token provided, update remote URL to use authentication
+    // Configure git credentials if token is provided
+    if (githubToken) {
+        // Store token as git credential
+        await runSandboxCommand(containerName, `git config --global credential.helper store`);
+        
+        const credsFile = `echo "https://${githubToken}@github.com" > ~/.git-credentials`;
+        await runSandboxCommand(containerName, credsFile);
+    }
+    
+    // Update remote URL to authenticated version if we have both token and URL
     if (githubToken && repoUrl) {
         const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
         await runSandboxCommand(containerName, `cd ${repoName} && git remote set-url origin ${authUrl}`);

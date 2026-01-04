@@ -65,7 +65,10 @@ const taskSchema = new Schema<ITask>(
     approvedBy: String,
     executionLog: Schema.Types.Mixed,
     result: Schema.Types.Mixed,
-    error: String,
+    error: {
+      type: String,
+      required: false,
+    },
     userId: String,
   },
   {

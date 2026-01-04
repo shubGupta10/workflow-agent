@@ -10,17 +10,19 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  credentials: true,
+}));
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
   res.json({ status: "OK" });
 });
 
-// ✅ AUTH ROUTES (THIS WAS MISSING)
 app.use("/api/auth", authRoutes);
 
-// ✅ TASK ROUTES
 app.use("/api/v1", taskRouter);
 
 app.use((err: any, req: express.Request, res: express.Response) => {

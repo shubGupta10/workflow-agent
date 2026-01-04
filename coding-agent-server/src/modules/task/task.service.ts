@@ -31,6 +31,13 @@ const createTask = async (input: CreateTaskRecordInput) => {
     //ready for user action
     await updateTaskStatus(task._id.toString(), TaskStatus.AWAITING_ACTION);
 
+    await Task.create({
+        repoUrl: repoUrl,
+        repoBranch: task.repoBranch,
+        status: TaskStatus.AWAITING_ACTION,
+        userId: userId
+    })
+
     return task._id.toString();
 }
 
@@ -52,6 +59,16 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
         taskId,
         {
             action,
+            userInput: userInput,
+            status: TaskStatus.PLANNING
+        },
+        { new: true }
+    )
+
+    await Task.findByIdAndUpdate(
+        taskId,
+        {
+            action: action,
             userInput: userInput,
             status: TaskStatus.PLANNING
         },
@@ -253,13 +270,31 @@ const executeTask = async (taskId: string) => {
                         logs.push(`Writing file: ${file.path}`);
                         await applyFileChanges(containerId, file.path, file.content, repoName)
                     }
+                    // Stage all changes to git after writing files
+                    logs.push(`Staging changes to git...`);
+                    await runSandboxCommand(containerId, `cd ${repoName} && git add .`);
                 }
 
                 if (step.command) {
                     logs.push(`Running command: ${step.command}`);
-                    // Ensure commands run inside the repo directory
-                    const output = await runSandboxCommand(containerId, `cd ${repoName} && ${step.command}`);
-                    logs.push(`Output: ${output.slice(0, 200)}...`);
+                    try {
+                        // Ensure commands run inside the repo directory
+                        const output = await runSandboxCommand(containerId, `cd ${repoName} && ${step.command}`);
+                        logs.push(`Output: ${output.slice(0, 200)}...`);
+                    } catch (cmdError: any) {
+                        // Handle git mv failure with fallback to regular mv
+                        if (step.command.includes('git mv') && cmdError.stderr?.includes('bad source')) {
+                            logs.push(`[FALLBACK] git mv failed, trying regular mv instead...`);
+                            const mvCommand = step.command.replace('git mv', 'mv');
+                            const output = await runSandboxCommand(containerId, `cd ${repoName} && ${mvCommand}`);
+                            logs.push(`[FALLBACK] File moved successfully: ${output.slice(0, 100)}...`);
+                            // Stage the changes
+                            await runSandboxCommand(containerId, `cd ${repoName} && git add .`);
+                            logs.push(`Changes staged after fallback mv`);
+                        } else {
+                            throw cmdError;
+                        }
+                    }
                 }
             }
         }
@@ -293,7 +328,8 @@ const executeTask = async (taskId: string) => {
 
         await Task.findByIdAndUpdate(taskId, {
             status: TaskStatus.FAILED,
-            executionResult: { status: 'FAILED', logs, error: error.message }
+            executionLog: { status: 'FAILED', logs, error: error.message },
+            error: error.message
         });
         throw error;
     } finally {
