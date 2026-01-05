@@ -96,7 +96,7 @@ export async function createPullRequest(
     githubToken?: string,
     title?: string,
     body?: string,
-    base: string = 'main'
+    base?: string
 ) {
     const regex = /github\.com\/([^\/]+)\/([^\/]+?)(\.git)?$/;
     const match = repoUrl.match(regex);
@@ -111,6 +111,15 @@ export async function createPullRequest(
     const octokitInstance = createOctokit(githubToken);
 
     try {
+        // If base branch not provided, fetch the default branch from GitHub
+        if (!base) {
+            const repoData = await octokitInstance.repos.get({
+                owner,
+                repo
+            });
+            base = repoData.data.default_branch;
+        }
+
         const response = await octokitInstance.pulls.create({
             owner,
             repo,

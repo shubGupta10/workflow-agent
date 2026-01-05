@@ -5,7 +5,7 @@ import { AuthRequest } from "../../middleware/auth.middleware";
 export const githubRedirect = (req: Request, res: Response) => {
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID as string,
-    scope: "read:user user:email",
+    scope: "repo read:user user:email",
   });
 
   const githubAuthUrl = `https://github.com/login/oauth/authorize?${params.toString()}`;
