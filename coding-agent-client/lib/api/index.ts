@@ -6,9 +6,6 @@ if (process.env.NODE_ENV === 'development') {
     console.log('[API] Backend URL:', appURl || 'NOT SET');
 }
 
-/**
- * Get common headers including authorization if token exists
- */
 const getHeaders = () => {
     const headers: Record<string, string> = {
         "Content-Type": "application/json"
@@ -147,33 +144,77 @@ export const executeTask = async (taskId: string) => {
 
 
 export const getMe = async () => {
-  const token = getToken();
+    const token = getToken();
 
-  if (!token) {
-    throw new Error("No token found");
-  }
-
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  const res = await fetch(
-    `${backendUrl}/api/auth/me`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    if (!token) {
+        throw new Error("No token found");
     }
-  );
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error("Not authenticated");
-  }
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  const data = await res.json();
-  
-  // Backend returns {success: true, user: {...}}, extract just the user
-  const user = data.user || data;
-  
-  return user;
+    const res = await fetch(
+        `${backendUrl}/api/auth/me`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error("Not authenticated");
+    }
+
+    const data = await res.json();
+
+    const user = data.user || data;
+
+    return user;
 };
+
+export const getSidebarTasks = async () => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const url = `${appURl}/api/v1/tasks/sidebar`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getSidebarTasks error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
+export const deleteTask = async (taskId: string) => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const url = `${appURl}/api/v1/tasks/${taskId}`;
+
+    const response = await fetch(url, {
+        method: "DELETE",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] deleteTask error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
 

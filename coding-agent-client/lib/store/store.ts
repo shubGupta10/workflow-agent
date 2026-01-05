@@ -7,6 +7,7 @@ interface TaskStore {
     currentTaskId: string | null;
 
     createSession: () => string;
+    setSessions: (sessions: Session[]) => void;
     setActiveSession: (sessionId: string) => void;
     addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
     updateSessionStatus: (sessionId: string, status: TaskStatus) => void;
@@ -14,6 +15,7 @@ interface TaskStore {
     getActiveSession: () => Session | undefined;
     removeLastMessage: (sessionId: string) => void;
     setCurrentTaskId: (taskId: string | null) => void;
+    removeSessionByTaskId: (taskId: string) => void;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -35,6 +37,29 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             activeSessionId: id,
         }));
         return id;
+    },
+
+    setSessions: (sessions: Session[]) => {
+        set((state) => {
+            if (sessions.length === 0) {
+                return state;
+            }
+
+            const existingById = new Map(state.sessions.map((session) => [session.id, session]));
+
+            const merged = [
+                ...state.sessions,
+                ...sessions.filter((session) => !existingById.has(session.id)),
+            ];
+
+            const activeSessionId =
+                state.activeSessionId !== null ? state.activeSessionId : merged[0]?.id ?? null;
+
+            return {
+                sessions: merged,
+                activeSessionId,
+            };
+        });
     },
 
     setActiveSession: (sessionId: string) => {
@@ -90,5 +115,25 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     setCurrentTaskId: (taskId: string | null) => {
         console.log('[Zustand] Setting currentTaskId:', taskId);
         set({ currentTaskId: taskId });
+    },
+
+    removeSessionByTaskId: (taskId: string) => {
+        set((state) => {
+            const remaining = state.sessions.filter((session) => session.taskId !== taskId);
+            let activeSessionId = state.activeSessionId;
+
+            const removedActive = state.sessions.find(
+                (session) => session.taskId === taskId && session.id === state.activeSessionId
+            );
+
+            if (removedActive) {
+                activeSessionId = remaining[0]?.id ?? null;
+            }
+
+            return {
+                sessions: remaining,
+                activeSessionId,
+            };
+        });
     },
 }));

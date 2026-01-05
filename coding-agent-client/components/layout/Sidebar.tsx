@@ -5,16 +5,28 @@ import { STATUS_LABELS, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Plus } from "lucide-react";
+import { Sparkles, Plus, X } from "lucide-react";
 
-export function Sidebar() {
+interface SidebarProps {
+    onDeleteTask?: (taskId: string) => void;
+}
+
+export function Sidebar({ onDeleteTask }: SidebarProps) {
     const { sessions, activeSessionId, createSession, setActiveSession } = useTaskStore();
 
     const handleNewTask = () => {
         createSession();
     };
 
-    // Status badge color mapping
+    const handleDeleteClick = (
+        event: React.MouseEvent<HTMLButtonElement>,
+        taskId?: string
+    ) => {
+        event.stopPropagation();
+        if (!taskId || !onDeleteTask) return;
+        onDeleteTask(taskId);
+    };
+
     const getStatusColor = (status: TaskStatus): string => {
         switch (status) {
             case "COMPLETED":
@@ -49,11 +61,11 @@ export function Sidebar() {
                 ) : (
                     <div className="space-y-1">
                         {sessions.map((session) => (
-                            <button
+                            <div
                                 key={session.id}
                                 onClick={() => setActiveSession(session.id)}
                                 className={cn(
-                                    "w-full text-left p-3 rounded-lg transition-colors",
+                                    "w-full text-left p-3 rounded-lg transition-colors cursor-pointer",
                                     "hover:bg-sidebar-accent",
                                     activeSessionId === session.id
                                         ? "bg-sidebar-accent"
@@ -64,6 +76,15 @@ export function Sidebar() {
                                     <span className="text-sm font-medium text-sidebar-foreground truncate flex-1">
                                         {session.title}
                                     </span>
+                                    {session.taskId && onDeleteTask && (
+                                        <button
+                                            type="button"
+                                            onClick={(event) => handleDeleteClick(event, session.taskId)}
+                                            className="text-xs text-muted-foreground hover:text-destructive"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="mt-1">
                                     <span
@@ -75,7 +96,7 @@ export function Sidebar() {
                                         {STATUS_LABELS[session.status]}
                                     </span>
                                 </div>
-                            </button>
+                            </div>
                         ))}
                     </div>
                 )}
