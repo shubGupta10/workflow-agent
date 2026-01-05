@@ -5,7 +5,7 @@ import { TaskView } from "@/components/task/TaskView";
 
 export default function ChatPage() {
     return (
-        <div className="flex h-screen bg-background">
+        <div className="flex h-[calc(100vh-4rem)] bg-background">
             <Sidebar />
             <TaskView />
         </div>

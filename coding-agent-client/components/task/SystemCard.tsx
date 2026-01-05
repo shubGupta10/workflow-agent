@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionType, ACTION_LABELS } from "@/lib/types";
 import ReactMarkdown from "react-markdown";
-import { Clipboard, Wrench, ClipboardList, Check, CheckCircle, ExternalLink, X } from "lucide-react";
+import { Clipboard, Wrench, ClipboardList, Check, CheckCircle, ExternalLink, X, Sparkles } from "lucide-react";
 
 interface ActionSelectionCardProps {
     onSelect: (action: ActionType) => void;
@@ -92,8 +92,8 @@ export function ReviewDisplayCard({ review }: ReviewDisplayCardProps) {
         <Card className="w-full">
             <CardHeader className="pb-4 border-b border-border">
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shrink-0">
-                        <CheckCircle className="w-5 h-5 text-primary" />
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
                         <CardTitle className="text-lg font-semibold">Pull Request Review</CardTitle>

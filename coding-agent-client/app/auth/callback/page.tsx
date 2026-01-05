@@ -25,12 +25,15 @@ export default function OAuthCallbackPage() {
       try {
         // Store token
         setToken(token);
+        
+        // Set cookie for server-side proxy checks
+        document.cookie = `coding_agent_token=${token}; path=/; max-age=86400; SameSite=Lax`;
 
         // Fetch and store user data
         await fetchCurrentUser();
 
-        // Redirect to home page
-        router.push('/');
+        // Redirect to chat page
+        router.push('/chat');
       } catch (err) {
         setError('Failed to process authentication. Please try again.');
         setIsLoading(false);

@@ -407,9 +407,9 @@ export function TaskView() {
     }
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-background">
+        <div className="flex-1 flex flex-col bg-background">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
                 <div className="max-w-3xl mx-auto">
                     {activeSession.messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">

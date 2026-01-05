@@ -103,11 +103,6 @@ export default function HomeContent() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-        <p>Built with AI • Powered by your backend</p>
-      </footer>
     </div>
   );
 }

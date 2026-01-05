@@ -31,7 +31,7 @@ export function Sidebar() {
     };
 
     return (
-        <div className="w-64 h-full bg-sidebar border-r border-sidebar-border flex flex-col">
+        <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
             {/* Header */}
             <div className="p-4 border-b border-sidebar-border">
                 <h1 className="text-lg font-semibold text-sidebar-foreground flex items-center gap-2">
