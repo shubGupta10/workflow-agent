@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, useCallback, ReactNode } from "react";
-import { Session, Message, TaskStatus, generateId } from "./types";
+import { Session, Message, TaskStatus, generateId } from "../types";
 
 // State shape
 interface TaskState {
@@ -169,3 +169,4 @@ export function useTask() {
     }
     return context;
 }
+

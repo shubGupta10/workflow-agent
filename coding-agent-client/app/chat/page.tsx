@@ -1,7 +1,7 @@
 "use client"
 
-import { Sidebar } from "@/components/Sidebar";
-import { TaskView } from "@/components/TaskView";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { TaskView } from "@/components/task/TaskView";
 
 export default function ChatPage() {
     return (

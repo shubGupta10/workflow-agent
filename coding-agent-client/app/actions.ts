@@ -1,6 +1,6 @@
 'use client';
 
-import { createTask, setTask, generatePlan, approvePlan, executeTask } from "@/lib/server/api";
+import { createTask, setTask, generatePlan, approvePlan, executeTask } from "@/lib/api";
 
 export async function createTaskAction(repoUrl: string, userId: string) {
     try {

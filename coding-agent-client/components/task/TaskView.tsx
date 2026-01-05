@@ -5,8 +5,8 @@ import { useTaskStore } from "@/lib/store/store";
 import { useAuthStore } from "@/lib/store/userStore";
 import { ActionType, Message } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChatMessage } from "./ChatMessage";
-import { ChatInput } from "./ChatInput";
+import { ChatMessage } from "../chat/ChatMessage";
+import { ChatInput } from "../chat/ChatInput";
 import {
     ActionSelectionCard,
     PlanDisplayCard,
@@ -449,3 +449,4 @@ export function TaskView() {
         </div>
     );
 }
+

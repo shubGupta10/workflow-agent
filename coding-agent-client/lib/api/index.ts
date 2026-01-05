@@ -46,7 +46,7 @@ export const createTask = async (repoUrl: string, userId: string) => {
 
     const data = await response.json();
     return data;
-}
+};
 
 export const setTask = async (taskId: string, action: string, userInput: string) => {
     if (!appURl) {
@@ -73,7 +73,7 @@ export const setTask = async (taskId: string, action: string, userInput: string)
     const data = await response.json();
     console.log('[API] setTask response:', data);
     return data;
-}
+};
 
 export const generatePlan = async (taskId: string) => {
     if (!appURl) {
@@ -95,7 +95,7 @@ export const generatePlan = async (taskId: string) => {
     const data = await response.json();
     console.log('[API] generatePlan response:', data);
     return data;
-}
+};
 
 export const approvePlan = async (taskId: string, approvedBy: string) => {
     if (!appURl) {
@@ -121,7 +121,7 @@ export const approvePlan = async (taskId: string, approvedBy: string) => {
     const data = await response.json();
     console.log('[API] approvePlan response:', data);
     return data;
-}
+};
 
 export const executeTask = async (taskId: string) => {
     if (!appURl) {
@@ -143,7 +143,7 @@ export const executeTask = async (taskId: string) => {
     const data = await response.json();
     console.log('[API] executeTask response:', data);
     return data;
-}
+};
 
 
 export const getMe = async () => {
@@ -176,3 +176,4 @@ export const getMe = async () => {
   
   return user;
 };
+

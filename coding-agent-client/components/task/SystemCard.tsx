@@ -216,3 +216,4 @@ export function ErrorCard({ error, onRetry }: ErrorCardProps) {
         </Card>
     );
 }
+

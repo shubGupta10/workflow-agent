@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getMe } from "../server/api";
+import { getMe } from "@/lib/api";
 
 export interface User {
   _id: string;

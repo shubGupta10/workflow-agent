@@ -87,3 +87,4 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
         </div>
     );
 }
+

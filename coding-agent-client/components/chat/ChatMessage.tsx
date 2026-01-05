@@ -45,3 +45,4 @@ export function ChatMessage({ message, children }: ChatMessageProps) {
         </div>
     );
 }
+
