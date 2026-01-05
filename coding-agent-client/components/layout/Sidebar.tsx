@@ -5,6 +5,7 @@ import { STATUS_LABELS, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sparkles, Plus } from "lucide-react";
 
 export function Sidebar() {
     const { sessions, activeSessionId, createSession, setActiveSession } = useTaskStore();
@@ -34,19 +35,7 @@ export function Sidebar() {
             {/* Header */}
             <div className="p-4 border-b border-sidebar-border">
                 <h1 className="text-lg font-semibold text-sidebar-foreground flex items-center gap-2">
-                    <svg
-                        className="w-5 h-5 text-sidebar-primary"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                        />
-                    </svg>
+                    <Sparkles className="w-5 h-5 text-sidebar-primary" />
                     Coding Agent
                 </h1>
             </div>
@@ -99,19 +88,7 @@ export function Sidebar() {
                     className="w-full"
                     variant="outline"
                 >
-                    <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                        />
-                    </svg>
+                    <Plus className="w-4 h-4 mr-2" />
                     New Task
                 </Button>
             </div>

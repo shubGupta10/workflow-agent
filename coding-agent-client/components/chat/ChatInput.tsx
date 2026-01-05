@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Send } from "lucide-react";
 
 interface ChatInputProps {
     placeholder?: string;
@@ -65,19 +66,7 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
                         size="icon"
                         className="h-11 w-11 shrink-0"
                     >
-                        <svg
-                            className="w-5 h-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                            />
-                        </svg>
+                        <Send className="w-5 h-5" />
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 text-center">

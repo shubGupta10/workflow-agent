@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Sparkles, ArrowRight, FileText, SlidersHorizontal, ClipboardList } from 'lucide-react';
 
 export default function HomeContent() {
   const router = useRouter();
@@ -45,19 +46,7 @@ export default function HomeContent() {
           {/* Logo/Icon */}
           <div className="mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 mb-6">
-              <svg
-                className="w-10 h-10 text-primary"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                />
-              </svg>
+              <Sparkles className="w-10 h-10 text-primary" />
             </div>
           </div>
 
@@ -76,19 +65,7 @@ export default function HomeContent() {
           <Link href="/chat">
             <Button size="lg" className="text-base px-8 py-6 h-auto">
               Start New Task
-              <svg
-                className="w-5 h-5 ml-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>
 
@@ -96,9 +73,7 @@ export default function HomeContent() {
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
             <div className="p-6 rounded-xl bg-card border border-border">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+                <FileText className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-semibold text-foreground mb-2">Review PRs</h3>
               <p className="text-sm text-muted-foreground">
@@ -108,9 +83,7 @@ export default function HomeContent() {
 
             <div className="p-6 rounded-xl bg-card border border-border">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
+                <SlidersHorizontal className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-semibold text-foreground mb-2">Fix Issues</h3>
               <p className="text-sm text-muted-foreground">
@@ -120,9 +93,7 @@ export default function HomeContent() {
 
             <div className="p-6 rounded-xl bg-card border border-border">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                </svg>
+                <ClipboardList className="w-5 h-5 text-primary" />
               </div>
               <h3 className="font-semibold text-foreground mb-2">Plan Changes</h3>
               <p className="text-sm text-muted-foreground">

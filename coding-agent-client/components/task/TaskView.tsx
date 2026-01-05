@@ -14,6 +14,7 @@ import {
     CompletionCard,
     ErrorCard,
 } from "./SystemCard";
+import { Sparkles } from "lucide-react";
 import {
     createTaskAction,
     setTaskAction,
@@ -413,19 +414,7 @@ export function TaskView() {
                     {activeSession.messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
                             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                                <svg
-                                    className="w-8 h-8 text-primary"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                                    />
-                                </svg>
+                                <Sparkles className="w-8 h-8 text-primary" />
                             </div>
                             <h2 className="text-xl font-semibold text-foreground mb-2">
                                 Start a New Task
