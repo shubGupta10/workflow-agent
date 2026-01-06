@@ -78,9 +78,19 @@ export function TaskView() {
         }
     }, [activeSession?.taskId, currentTaskId, setCurrentTaskId]);
 
-    // Fetch task details when active session changes
+    // Fetch task details only for completed tasks
     useEffect(() => {
         if (!activeSession?.taskId) return;
+
+        // Only fetch details for completed/historical tasks
+        const isCompletedTask = 
+            activeSession.status === "COMPLETED" || 
+            activeSession.status === "REVIEW_COMPLETE" || 
+            activeSession.status === "ERROR";
+
+        if (!isCompletedTask) {
+            return;
+        }
 
         const cachedDetails = getCachedTaskDetails(activeSession.taskId);
         if (cachedDetails) {
@@ -104,7 +114,7 @@ export function TaskView() {
         };
 
         fetchDetails();
-    }, [activeSession?.taskId, getCachedTaskDetails, setTaskDetails]);
+    }, [activeSession?.taskId, activeSession?.status, getCachedTaskDetails, setTaskDetails]);
 
     const getPlaceholder = (): string => {
         if (!activeSession) return "Paste GitHub repository URL…";
@@ -444,8 +454,12 @@ export function TaskView() {
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
                 <div className="max-w-3xl mx-auto">
-                    {/* Show task history if available, regardless of messages */}
-                    {activeSession.taskId && !taskDetailsLoading && (
+                    {/* Show task history ONLY for completed tasks */}
+                    {activeSession.taskId && 
+                     (activeSession.status === "COMPLETED" || 
+                      activeSession.status === "REVIEW_COMPLETE" || 
+                      activeSession.status === "ERROR") && 
+                     !taskDetailsLoading && (
                         (() => {
                             const taskDetails = getCachedTaskDetails(activeSession.taskId);
                             return taskDetails ? (
