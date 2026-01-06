@@ -26,8 +26,6 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderRepoSummary = () => {
-        if (!taskDetails.repoSummary) return null;
-
         return (
             <Card className="w-full mb-4">
                 <CardHeader
@@ -48,48 +46,54 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                 </CardHeader>
                 {expandedSections.repo && (
                     <CardContent className="space-y-3">
-                        {taskDetails.repoSummary.repoUrl && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Repository URL</p>
-                                <a
-                                    href={taskDetails.repoSummary.repoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline"
-                                >
-                                    {taskDetails.repoSummary.repoUrl}
-                                </a>
-                            </div>
-                        )}
-                        {taskDetails.repoSummary.languages?.length > 0 && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Languages</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {taskDetails.repoSummary.languages.join(", ")}
-                                </p>
-                            </div>
-                        )}
-                        {taskDetails.repoSummary.framework && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Framework</p>
-                                <p className="text-sm text-muted-foreground">{taskDetails.repoSummary.framework}</p>
-                            </div>
-                        )}
-                        {taskDetails.repoSummary.packageManager && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Package Manager</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {taskDetails.repoSummary.packageManager}
-                                </p>
-                            </div>
-                        )}
-                        {taskDetails.repoSummary.configFiles?.length > 0 && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Config Files</p>
-                                <p className="text-sm text-muted-foreground">
-                                    {taskDetails.repoSummary.configFiles.join(", ")}
-                                </p>
-                            </div>
+                        {!taskDetails.repoSummary ? (
+                            <p className="text-sm text-muted-foreground italic">Repository summary not available</p>
+                        ) : (
+                            <>
+                                {taskDetails.repoSummary.repoUrl && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Repository URL</p>
+                                        <a
+                                            href={taskDetails.repoSummary.repoUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-primary hover:underline"
+                                        >
+                                            {taskDetails.repoSummary.repoUrl}
+                                        </a>
+                                    </div>
+                                )}
+                                {taskDetails.repoSummary.languages?.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Languages</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {taskDetails.repoSummary.languages.join(", ")}
+                                        </p>
+                                    </div>
+                                )}
+                                {taskDetails.repoSummary.framework && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Framework</p>
+                                        <p className="text-sm text-muted-foreground">{taskDetails.repoSummary.framework}</p>
+                                    </div>
+                                )}
+                                {taskDetails.repoSummary.packageManager && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Package Manager</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {taskDetails.repoSummary.packageManager}
+                                        </p>
+                                    </div>
+                                )}
+                                {taskDetails.repoSummary.configFiles?.length > 0 && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Config Files</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {taskDetails.repoSummary.configFiles.join(", ")}
+                                        </p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </CardContent>
                 )}
@@ -98,8 +102,6 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderPlan = () => {
-        if (!taskDetails.plan) return null;
-
         return (
             <Card className="w-full mb-4">
                 <CardHeader
@@ -122,34 +124,38 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                 </CardHeader>
                 {expandedSections.plan && (
                     <CardContent>
-                        <div className="bg-muted rounded-lg p-4 max-h-96 overflow-y-auto prose prose-sm max-w-none">
-                            <ReactMarkdown
-                                components={{
-                                    h2: ({ children }: any) => (
-                                        <h2 className="text-base font-semibold mt-4 mb-2">{children}</h2>
-                                    ),
-                                    h3: ({ children }: any) => (
-                                        <h3 className="text-sm font-semibold mt-3 mb-1">{children}</h3>
-                                    ),
-                                    p: ({ children }: any) => (
-                                        <p className="text-sm text-muted-foreground mb-2">{children}</p>
-                                    ),
-                                    ul: ({ children }: any) => (
-                                        <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                                            {children}
-                                        </ul>
-                                    ),
-                                    li: ({ children }: any) => (
-                                        <li className="text-sm text-muted-foreground">{children}</li>
-                                    ),
-                                    strong: ({ children }: any) => (
-                                        <strong className="font-semibold text-foreground">{children}</strong>
-                                    ),
-                                }}
-                            >
-                                {taskDetails.plan}
-                            </ReactMarkdown>
-                        </div>
+                        {!taskDetails.plan ? (
+                            <p className="text-sm text-muted-foreground italic">Plan not available</p>
+                        ) : (
+                            <div className="bg-muted rounded-lg p-4 max-h-96 overflow-y-auto prose prose-sm max-w-none">
+                                <ReactMarkdown
+                                    components={{
+                                        h2: ({ children }: any) => (
+                                            <h2 className="text-base font-semibold mt-4 mb-2">{children}</h2>
+                                        ),
+                                        h3: ({ children }: any) => (
+                                            <h3 className="text-sm font-semibold mt-3 mb-1">{children}</h3>
+                                        ),
+                                        p: ({ children }: any) => (
+                                            <p className="text-sm text-muted-foreground mb-2">{children}</p>
+                                        ),
+                                        ul: ({ children }: any) => (
+                                            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                                                {children}
+                                            </ul>
+                                        ),
+                                        li: ({ children }: any) => (
+                                            <li className="text-sm text-muted-foreground">{children}</li>
+                                        ),
+                                        strong: ({ children }: any) => (
+                                            <strong className="font-semibold text-foreground">{children}</strong>
+                                        ),
+                                    }}
+                                >
+                                    {taskDetails.plan}
+                                </ReactMarkdown>
+                            </div>
+                        )}
                     </CardContent>
                 )}
             </Card>
@@ -157,8 +163,6 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderExecutionLog = () => {
-        if (!taskDetails.executionLog?.message) return null;
-
         return (
             <Card className="w-full mb-4">
                 <CardHeader
@@ -179,9 +183,13 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                 </CardHeader>
                 {expandedSections.execution && (
                     <CardContent>
-                        <div className="bg-muted rounded-lg p-4">
-                            <p className="text-sm text-muted-foreground">{taskDetails.executionLog.message}</p>
-                        </div>
+                        {!taskDetails.executionLog?.message ? (
+                            <p className="text-sm text-muted-foreground italic">Execution log not available</p>
+                        ) : (
+                            <div className="bg-muted rounded-lg p-4">
+                                <p className="text-sm text-muted-foreground">{taskDetails.executionLog.message}</p>
+                            </div>
+                        )}
                     </CardContent>
                 )}
             </Card>
@@ -189,10 +197,7 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderResult = () => {
-        if (!taskDetails.result) return null;
-
-        const hasResult = Object.values(taskDetails.result).some((val) => val !== null && val !== undefined);
-        if (!hasResult) return null;
+        const hasResult = taskDetails.result && Object.values(taskDetails.result).some((val) => val !== null && val !== undefined);
 
         return (
             <Card className="w-full mb-4">
@@ -214,28 +219,34 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                 </CardHeader>
                 {expandedSections.result && (
                     <CardContent className="space-y-3">
-                        {taskDetails.result.prUrl && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Pull Request</p>
-                                <a
-                                    href={taskDetails.result.prUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline"
-                                >
-                                    {taskDetails.result.prUrl}
-                                </a>
-                            </div>
-                        )}
-                        {taskDetails.result.review && (
-                            <div>
-                                <p className="text-sm font-medium text-foreground mb-2">Review</p>
-                                <div className="bg-muted rounded-lg p-3 max-h-48 overflow-y-auto">
-                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                        {taskDetails.result.review}
-                                    </p>
-                                </div>
-                            </div>
+                        {!hasResult ? (
+                            <p className="text-sm text-muted-foreground italic">Task result not available</p>
+                        ) : (
+                            <>
+                                {taskDetails.result.prUrl && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Pull Request</p>
+                                        <a
+                                            href={taskDetails.result.prUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-primary hover:underline"
+                                        >
+                                            {taskDetails.result.prUrl}
+                                        </a>
+                                    </div>
+                                )}
+                                {taskDetails.result.review && (
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground mb-2">Review</p>
+                                        <div className="bg-muted rounded-lg p-3 max-h-48 overflow-y-auto">
+                                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                                {taskDetails.result.review}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </CardContent>
                 )}
