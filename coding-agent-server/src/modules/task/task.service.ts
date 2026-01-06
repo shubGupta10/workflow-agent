@@ -337,10 +337,51 @@ const executeTask = async (taskId: string) => {
     }
 }
 
+const listSidebarTasks = async (userId: string) => {
+    const tasks = await Task.find({
+        userId: userId
+    }, {
+        _id: 1,
+        repoUrl: 1,
+        userId: 1,
+        status: 1,
+        action: 1,
+        createdAt: 1,
+        updatedAt: 1
+    })
+
+    return tasks.map(task => {
+        return {
+            taskId: task._id.toString(),
+            userId: task.userId,
+            repoUrl: task.repoUrl,
+            status: task.status,
+            action: task.action,
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt
+        }
+    })
+}
+
+const deleteTask = async (taskId: string) => {
+    if(!taskId){
+        throw new Error("TaskId is required to delete task");
+    }
+
+    const deleted = await Task.findByIdAndDelete(taskId);
+    if(!deleted){
+        throw new Error("Task not found or already deleted");
+    }
+
+    return true;
+} 
+
 export const TaskService = {
     createTask,
     setTaskAction,
     generatePlan,
     approvePlan,
-    executeTask
+    executeTask,
+    listSidebarTasks,
+    deleteTask
 }

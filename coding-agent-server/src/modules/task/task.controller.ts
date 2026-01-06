@@ -60,10 +60,41 @@ const executeTask = errorWrapper(
     }
 )
 
+const listSidebarTasks = errorWrapper(
+    async (req: AuthRequest, res: Response) => {
+        const userId = req.user.userId;
+
+        const tasks = await TaskService.listSidebarTasks(userId);
+        if(!tasks){
+            return res.status(400).json({
+                message: "No Tasks found for this user"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Tasks fetched successfully",
+            data: tasks
+        })
+    }
+)
+
+const deleteTask = errorWrapper(
+    async (req: AuthRequest, res: Response) => {
+        const {taskId} = req.params;
+
+        await TaskService.deleteTask(taskId);
+        return res.status(200).json({
+            message: "Task deleted successfully"
+        })
+    }
+)
+
 export {
     createTask,
     setTaskAction,
     generatePlan,
     approvePlan,
-    executeTask
+    executeTask,
+    listSidebarTasks,
+    deleteTask
 }
