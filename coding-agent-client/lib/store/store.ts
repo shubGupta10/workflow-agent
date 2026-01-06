@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { Session, TaskStatus, ActionType, Message, generateId } from '@/lib/types';
+import { Session, TaskStatus, ActionType, Message, generateId, TaskDetails } from '@/lib/types';
 
 interface TaskStore {
     sessions: Session[];
     activeSessionId: string | null;
     currentTaskId: string | null;
+    taskDetailsCache: Record<string, TaskDetails>;
 
     createSession: () => string;
     setSessions: (sessions: Session[]) => void;
@@ -16,12 +17,15 @@ interface TaskStore {
     removeLastMessage: (sessionId: string) => void;
     setCurrentTaskId: (taskId: string | null) => void;
     removeSessionByTaskId: (taskId: string) => void;
+    setTaskDetails: (taskId: string, details: TaskDetails) => void;
+    getTaskDetails: (taskId: string) => TaskDetails | undefined;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
     sessions: [],
     activeSessionId: null,
     currentTaskId: null,
+    taskDetailsCache: {},
 
     createSession: () => {
         const id = generateId();
@@ -135,5 +139,19 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
                 activeSessionId,
             };
         });
+    },
+
+    setTaskDetails: (taskId: string, details: TaskDetails) => {
+        set((state) => ({
+            taskDetailsCache: {
+                ...state.taskDetailsCache,
+                [taskId]: details,
+            },
+        }));
+    },
+
+    getTaskDetails: (taskId: string) => {
+        const state = get();
+        return state.taskDetailsCache[taskId];
     },
 }));

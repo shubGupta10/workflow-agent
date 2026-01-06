@@ -66,3 +66,37 @@ export const ACTION_LABELS: Record<ActionType, string> = {
     PLAN_CHANGE: "Plan a Change",
 };
 
+export interface RepoSummary {
+    taskId: string;
+    repoUrl: string;
+    languages: string[];
+    framework: string;
+    configFiles: string[];
+    packageManager: string;
+    folderStructure: string[];
+    entryPoints: string[];
+}
+
+export interface ExecutionLog {
+    message: string;
+}
+
+export interface TaskResult {
+    review?: string;
+    prUrl?: string;
+    [key: string]: unknown;
+}
+
+export interface TaskDetails {
+    taskId: string;
+    status: TaskStatus;
+    action: ActionType;
+    userInput: string;
+    repoSummary: RepoSummary;
+    plan: string;
+    executionLog: ExecutionLog;
+    result: TaskResult;
+    createdAt: string;
+    updatedAt: string;
+}
+

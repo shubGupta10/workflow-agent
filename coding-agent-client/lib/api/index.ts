@@ -217,4 +217,26 @@ export const deleteTask = async (taskId: string) => {
     return data;
 };
 
+export const getTaskDetails = async (taskId: string) => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const url = `${appURl}/api/v1/tasks/details/${taskId}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getTaskDetails error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
 

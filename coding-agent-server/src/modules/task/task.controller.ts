@@ -65,7 +65,7 @@ const listSidebarTasks = errorWrapper(
         const userId = req.user.userId;
 
         const tasks = await TaskService.listSidebarTasks(userId);
-        if(!tasks){
+        if (!tasks) {
             return res.status(400).json({
                 message: "No Tasks found for this user"
             })
@@ -80,11 +80,29 @@ const listSidebarTasks = errorWrapper(
 
 const deleteTask = errorWrapper(
     async (req: AuthRequest, res: Response) => {
-        const {taskId} = req.params;
+        const { taskId } = req.params;
 
         await TaskService.deleteTask(taskId);
         return res.status(200).json({
             message: "Task deleted successfully"
+        })
+    }
+)
+
+const taskDetails = errorWrapper(
+    async (req: AuthRequest, res: Response) => {
+        const { taskId } = req.params;
+
+        const task = await TaskService.taskDetails(taskId);
+        if (!task) {
+            return res.status(400).json({
+                message: "Task not found"
+            })
+        }
+
+        return res.status(200).json({
+            message: "Task details fetched successfully",
+            data: task,
         })
     }
 )
@@ -96,5 +114,6 @@ export {
     approvePlan,
     executeTask,
     listSidebarTasks,
-    deleteTask
+    deleteTask,
+    taskDetails
 }

@@ -7,6 +7,7 @@ import { ActionType, Message } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "../chat/ChatMessage";
 import { ChatInput } from "../chat/ChatInput";
+import { TaskHistory } from "./TaskHistory";
 import {
     ActionSelectionCard,
     PlanDisplayCard,
@@ -15,6 +16,7 @@ import {
     ErrorCard,
 } from "./SystemCard";
 import { Sparkles } from "lucide-react";
+import { getTaskDetails } from "@/lib/api";
 import {
     createTaskAction,
     setTaskAction,
@@ -37,11 +39,14 @@ export function TaskView() {
         getActiveSession,
         removeLastMessage,
         setCurrentTaskId, // Now from store
+        setTaskDetails,
+        getTaskDetails: getCachedTaskDetails,
     } = useTaskStore();
 
     const [isLoading, setIsLoading] = useState(false);
     const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
     const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+    const [taskDetailsLoading, setTaskDetailsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const activeSession = getActiveSession();
@@ -72,6 +77,34 @@ export function TaskView() {
             setCurrentTaskId(activeSession.taskId);
         }
     }, [activeSession?.taskId, currentTaskId, setCurrentTaskId]);
+
+    // Fetch task details when active session changes
+    useEffect(() => {
+        if (!activeSession?.taskId) return;
+
+        const cachedDetails = getCachedTaskDetails(activeSession.taskId);
+        if (cachedDetails) {
+            // Already cached, don't fetch again
+            return;
+        }
+
+        const fetchDetails = async () => {
+            setTaskDetailsLoading(true);
+            try {
+                const response = await getTaskDetails(activeSession.taskId!);
+                const details = response.data;
+                if (details) {
+                    setTaskDetails(activeSession.taskId!, details);
+                }
+            } catch (error) {
+                console.error('[TaskView] Failed to fetch task details:', error);
+            } finally {
+                setTaskDetailsLoading(false);
+            }
+        };
+
+        fetchDetails();
+    }, [activeSession?.taskId, getCachedTaskDetails, setTaskDetails]);
 
     const getPlaceholder = (): string => {
         if (!activeSession) return "Paste GitHub repository URL…";
@@ -411,7 +444,17 @@ export function TaskView() {
             {/* Messages Area */}
             <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
                 <div className="max-w-3xl mx-auto">
-                    {activeSession.messages.length === 0 ? (
+                    {/* Show task history if available, regardless of messages */}
+                    {activeSession.taskId && !taskDetailsLoading && (
+                        (() => {
+                            const taskDetails = getCachedTaskDetails(activeSession.taskId);
+                            return taskDetails ? (
+                                <TaskHistory taskDetails={taskDetails} />
+                            ) : null;
+                        })()
+                    )}
+
+                    {activeSession.messages.length === 0 && !activeSession.taskId ? (
                         <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
                             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
                                 <Sparkles className="w-8 h-8 text-primary" />
@@ -424,7 +467,10 @@ export function TaskView() {
                             </p>
                         </div>
                     ) : (
-                        activeSession.messages.map(renderMessage)
+                        <>
+                            {/* Chat Messages */}
+                            {activeSession.messages.map(renderMessage)}
+                        </>
                     )}
                 </div>
             </ScrollArea>

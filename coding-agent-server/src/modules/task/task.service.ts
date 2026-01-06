@@ -348,7 +348,7 @@ const listSidebarTasks = async (userId: string) => {
         action: 1,
         createdAt: 1,
         updatedAt: 1
-    })
+    }).sort({ createdAt: -1 });
 
     return tasks.map(task => {
         return {
@@ -364,17 +364,43 @@ const listSidebarTasks = async (userId: string) => {
 }
 
 const deleteTask = async (taskId: string) => {
-    if(!taskId){
+    if (!taskId) {
         throw new Error("TaskId is required to delete task");
     }
 
     const deleted = await Task.findByIdAndDelete(taskId);
-    if(!deleted){
+    if (!deleted) {
         throw new Error("Task not found or already deleted");
     }
 
     return true;
-} 
+}
+
+const taskDetails = async (taskId: string) => {
+    if (!taskId) {
+        throw new Error("TaskId is required to fetch task details");
+    }
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+        throw new Error("Task not found");
+    }
+
+    const payload = {
+        taskId: task._id.toString(),
+        status: task.status,
+        action: task.action,
+        userInput: task.userInput,
+        repoSummary: task.repoSummary,
+        plan: task.plan,
+        executionLog: task.executionLog,
+        result: task.result,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+    }
+
+    return payload;
+}
 
 export const TaskService = {
     createTask,
@@ -383,5 +409,6 @@ export const TaskService = {
     approvePlan,
     executeTask,
     listSidebarTasks,
-    deleteTask
+    deleteTask,
+    taskDetails
 }
