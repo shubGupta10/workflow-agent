@@ -86,7 +86,6 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                     "md:translate-x-0 md:static md:h-full"
                 )}
             >
-                {/* Close button for mobile only - no header on desktop */}
                 {isMobile && (
                     <div className="flex justify-end items-center p-2 border-b border-sidebar-border shrink-0">
                         <Button
@@ -100,7 +99,6 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                     </div>
                 )}
 
-                {/* Session List */}
                 <div className="flex-1 min-h-0 overflow-hidden">
                     <ScrollArea className="h-full p-2">
                         {sessions.length === 0 ? (
@@ -152,7 +150,6 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                     </ScrollArea>
                 </div>
 
-                {/* New Task Button */}
                 <div className="p-4 border-t border-sidebar-border shrink-0">
                     <Button
                         onClick={handleNewTask}
