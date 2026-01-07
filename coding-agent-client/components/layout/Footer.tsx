@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 export function Footer() {
   const pathname = usePathname();
-  
+
   if (pathname === "/chat") {
     return null;
   }

@@ -41,9 +41,9 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
     };
 
     return (
-        <div className="border-t border-border bg-background p-4">
+        <div className="bg-background p-4">
             <div className="max-w-3xl mx-auto">
-                <div className="flex gap-2 items-end">
+                <div className="flex gap-3 items-end">
                     <div className="flex-1 relative">
                         <Textarea
                             ref={textareaRef}
@@ -54,7 +54,7 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
                             disabled={disabled}
                             rows={1}
                             className={cn(
-                                "resize-none min-h-[44px] max-h-[200px] pr-12",
+                                "resize-none min-h-[44px] max-h-[200px]",
                                 "bg-input border-border",
                                 disabled && "opacity-50 cursor-not-allowed"
                             )}

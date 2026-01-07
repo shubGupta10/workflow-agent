@@ -15,13 +15,13 @@ export function ChatMessage({ message, children }: ChatMessageProps) {
     return (
         <div
             className={cn(
-                "flex w-full mb-4",
+                "flex w-full",
                 isUser ? "justify-end" : "justify-start"
             )}
         >
             <div
                 className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-3",
+                    "max-w-[85%] rounded-2xl px-4 py-3",
                     isUser
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-card text-card-foreground border border-border rounded-bl-md"
@@ -39,7 +39,7 @@ export function ChatMessage({ message, children }: ChatMessageProps) {
                 ) : children ? (
                     children
                 ) : (
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                 )}
             </div>
         </div>

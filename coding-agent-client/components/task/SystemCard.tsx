@@ -14,37 +14,37 @@ interface ActionSelectionCardProps {
 export function ActionSelectionCard({ onSelect, disabled }: ActionSelectionCardProps) {
     return (
         <Card className="w-full max-w-md">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-base">What would you like to do?</CardTitle>
-                <CardDescription>Choose an action for this repository</CardDescription>
+            <CardHeader className="pb-4">
+                <CardTitle className="text-base font-semibold">What would you like to do?</CardTitle>
+                <CardDescription className="text-sm">Choose an action for this repository</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-2">
+            <CardContent className="grid gap-3">
                 <Button
                     variant="outline"
-                    className="justify-start h-auto py-3"
+                    className="justify-start h-auto py-4 px-4"
                     onClick={() => onSelect("REVIEW_PR")}
                     disabled={disabled}
                 >
-                    <Clipboard className="w-4 h-4 mr-3 text-primary" />
-                    {ACTION_LABELS.REVIEW_PR}
+                    <Clipboard className="w-4 h-4 mr-3 text-primary shrink-0" />
+                    <span className="text-sm font-medium">{ACTION_LABELS.REVIEW_PR}</span>
                 </Button>
                 <Button
                     variant="outline"
-                    className="justify-start h-auto py-3"
+                    className="justify-start h-auto py-4 px-4"
                     onClick={() => onSelect("FIX_ISSUE")}
                     disabled={disabled}
                 >
-                    <Wrench className="w-4 h-4 mr-3 text-primary" />
-                    {ACTION_LABELS.FIX_ISSUE}
+                    <Wrench className="w-4 h-4 mr-3 text-primary shrink-0" />
+                    <span className="text-sm font-medium">{ACTION_LABELS.FIX_ISSUE}</span>
                 </Button>
                 <Button
                     variant="outline"
-                    className="justify-start h-auto py-3"
+                    className="justify-start h-auto py-4 px-4"
                     onClick={() => onSelect("PLAN_CHANGE")}
                     disabled={disabled}
                 >
-                    <ClipboardList className="w-4 h-4 mr-3 text-primary" />
-                    {ACTION_LABELS.PLAN_CHANGE}
+                    <ClipboardList className="w-4 h-4 mr-3 text-primary shrink-0" />
+                    <span className="text-sm font-medium">{ACTION_LABELS.PLAN_CHANGE}</span>
                 </Button>
             </CardContent>
         </Card>
@@ -61,15 +61,15 @@ interface PlanDisplayCardProps {
 export function PlanDisplayCard({ plan, onApprove, onEdit, disabled }: PlanDisplayCardProps) {
     return (
         <Card className="w-full">
-            <CardHeader className="pb-3">
-                <CardTitle className="text-base">Implementation Plan</CardTitle>
-                <CardDescription>Review the proposed changes</CardDescription>
+            <CardHeader className="pb-4">
+                <CardTitle className="text-base font-semibold">Implementation Plan</CardTitle>
+                <CardDescription className="text-sm">Review the proposed changes</CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="bg-muted rounded-lg p-4 mb-4 max-h-96 overflow-y-auto">
-                    <pre className="text-sm whitespace-pre-wrap font-mono">{plan}</pre>
+            <CardContent className="space-y-4">
+                <div className="bg-muted rounded-lg p-4 max-h-96 overflow-y-auto border border-border">
+                    <pre className="text-sm whitespace-pre-wrap font-mono text-foreground leading-relaxed">{plan}</pre>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                     <Button onClick={onApprove} disabled={disabled} className="flex-1">
                         <Check className="w-4 h-4 mr-2" />
                         Approve & Execute
@@ -144,29 +144,29 @@ interface CompletionCardProps {
 
 export function CompletionCard({ message, prUrl, onNewTask }: CompletionCardProps) {
     return (
-        <Card className="w-full">
-            <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-green-600" />
+        <Card className="w-full border-green-500/20">
+            <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <CardTitle className="text-base">Task Completed</CardTitle>
+                    <CardTitle className="text-base font-semibold">Task Completed</CardTitle>
                 </div>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">{message}</p>
+            <CardContent className="space-y-4">
+                <p className="text-sm text-foreground leading-relaxed">{message}</p>
                 {prUrl && (
                     <a
                         href={prUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm text-primary hover:underline mb-4"
+                        className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium"
                     >
                         <ExternalLink className="w-4 h-4" />
                         View Pull Request
                     </a>
                 )}
-                <Button onClick={onNewTask} className="w-full">
+                <Button onClick={onNewTask} className="w-full mt-2">
                     Start New Task
                 </Button>
             </CardContent>
@@ -182,18 +182,18 @@ interface ErrorCardProps {
 export function ErrorCard({ error, onRetry }: ErrorCardProps) {
     return (
         <Card className="w-full border-destructive/50">
-            <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-destructive/20 flex items-center justify-center">
-                        <X className="w-4 h-4 text-destructive" />
+            <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                        <X className="w-5 h-5 text-destructive" />
                     </div>
-                    <CardTitle className="text-base text-destructive">Error</CardTitle>
+                    <CardTitle className="text-base font-semibold text-destructive">Error</CardTitle>
                 </div>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <CardContent className="space-y-4">
+                <p className="text-sm text-foreground leading-relaxed">{error}</p>
                 {onRetry && (
-                    <Button variant="outline" onClick={onRetry}>
+                    <Button variant="outline" onClick={onRetry} className="w-full">
                         Try Again
                     </Button>
                 )}

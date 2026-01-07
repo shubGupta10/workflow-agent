@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useTaskStore } from "@/lib/store/store";
 import { useAuthStore } from "@/lib/store/userStore";
 import { ActionType, Message } from "@/lib/types";
@@ -25,7 +25,12 @@ import {
     executeTaskAction,
 } from "@/app/actions";
 
-export function TaskView() {
+interface TaskViewProps {
+    onToggleSidebar?: () => void;
+    isMobile?: boolean;
+}
+
+export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = {}) {
     const { user, fetchCurrentUser } = useAuthStore();
     const {
         sessions,
@@ -47,7 +52,6 @@ export function TaskView() {
     const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
     const [currentPlan, setCurrentPlan] = useState<string | null>(null);
     const [taskDetailsLoading, setTaskDetailsLoading] = useState(false);
-    const scrollRef = useRef<HTMLDivElement>(null);
 
     const activeSession = getActiveSession();
 
@@ -59,12 +63,6 @@ export function TaskView() {
             });
         }
     }, []);
-
-    useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
-    }, [activeSession?.messages]);
 
     useEffect(() => {
         if (sessions.length === 0) {
@@ -83,9 +81,9 @@ export function TaskView() {
         if (!activeSession?.taskId) return;
 
         // Only fetch details for completed/historical tasks
-        const isCompletedTask = 
-            activeSession.status === "COMPLETED" || 
-            activeSession.status === "REVIEW_COMPLETE" || 
+        const isCompletedTask =
+            activeSession.status === "COMPLETED" ||
+            activeSession.status === "REVIEW_COMPLETE" ||
             activeSession.status === "ERROR";
 
         if (!isCompletedTask) {
@@ -450,52 +448,57 @@ export function TaskView() {
     }
 
     return (
-        <div className="flex-1 flex flex-col bg-background">
+        <div className="flex-1 flex flex-col bg-background h-full overflow-hidden">
             {/* Messages Area */}
-            <ScrollArea className="flex-1 p-4 min-h-0" ref={scrollRef}>
-                <div className="max-w-3xl mx-auto">
-                    {/* Show task history ONLY for completed tasks */}
-                    {activeSession.taskId && 
-                     (activeSession.status === "COMPLETED" || 
-                      activeSession.status === "REVIEW_COMPLETE" || 
-                      activeSession.status === "ERROR") && 
-                     !taskDetailsLoading && (
-                        (() => {
-                            const taskDetails = getCachedTaskDetails(activeSession.taskId);
-                            return taskDetails ? (
-                                <TaskHistory taskDetails={taskDetails} />
-                            ) : null;
-                        })()
-                    )}
+            <div className="flex-1 overflow-y-auto">
+                <ScrollArea className="h-full">
+                    <div className="px-4 py-6">
+                        <div className="space-y-4">
+                            {/* Show task history ONLY for completed tasks */}
+                            {activeSession.taskId &&
+                                (activeSession.status === "COMPLETED" ||
+                                    activeSession.status === "REVIEW_COMPLETE" ||
+                                    activeSession.status === "ERROR") &&
+                                !taskDetailsLoading && (
+                                    (() => {
+                                        const taskDetails = getCachedTaskDetails(activeSession.taskId);
+                                        return taskDetails ? (
+                                            <TaskHistory taskDetails={taskDetails} />
+                                        ) : null;
+                                    })()
+                                )}
 
-                    {activeSession.messages.length === 0 && !activeSession.taskId ? (
-                        <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center">
-                            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                                <Sparkles className="w-8 h-8 text-primary" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-foreground mb-2">
-                                Start a New Task
-                            </h2>
-                            <p className="text-muted-foreground max-w-md">
-                                Paste a GitHub repository URL below to get started. I can help you review PRs, fix issues, or plan changes.
-                            </p>
+                            {activeSession.messages.length === 0 && !activeSession.taskId ? (
+                                <div className="flex flex-col items-center justify-center min-h-[500px] text-center px-4">
+                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                                        <Sparkles className="w-8 h-8 text-primary" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold text-foreground mb-3">
+                                        Start a New Task
+                                    </h2>
+                                    <p className="text-muted-foreground max-w-md leading-relaxed">
+                                        Paste a GitHub repository URL below to get started. I can help you review PRs, fix issues, or plan changes.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Chat Messages */}
+                                    {activeSession.messages.map(renderMessage)}
+                                </>
+                            )}
                         </div>
-                    ) : (
-                        <>
-                            {/* Chat Messages */}
-                            {activeSession.messages.map(renderMessage)}
-                        </>
-                    )}
-                </div>
-            </ScrollArea>
+                    </div>
+                </ScrollArea>
+            </div>
 
             {/* Input Area */}
-            <ChatInput
-                placeholder={getPlaceholder()}
-                onSubmit={handleSubmit}
-                disabled={isInputDisabled()}
-            />
+            <div className="border-t border-border bg-background shrink-0">
+                <ChatInput
+                    placeholder={getPlaceholder()}
+                    onSubmit={handleSubmit}
+                    disabled={isInputDisabled()}
+                />
+            </div>
         </div>
     );
 }
-

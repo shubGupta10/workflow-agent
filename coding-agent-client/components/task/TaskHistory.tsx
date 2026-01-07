@@ -27,37 +27,37 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
 
     const renderRepoSummary = () => {
         return (
-            <Card className="w-full mb-4">
+            <Card className="w-full mb-3 border-border/50">
                 <CardHeader
-                    className="cursor-pointer hover:bg-muted/50 pb-3"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors pb-4"
                     onClick={() => toggleSection("repo")}
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle className="text-base">Repository Summary</CardTitle>
-                            <CardDescription>Repository information analyzed</CardDescription>
+                            <CardTitle className="text-base font-semibold">Repository Summary</CardTitle>
+                            <CardDescription className="text-sm mt-1">Repository information analyzed</CardDescription>
                         </div>
                         {expandedSections.repo ? (
-                            <ChevronUp className="w-5 h-5" />
+                            <ChevronUp className="w-5 h-5 text-muted-foreground" />
                         ) : (
-                            <ChevronDown className="w-5 h-5" />
+                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
                         )}
                     </div>
                 </CardHeader>
                 {expandedSections.repo && (
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-4 pt-0">
                         {!taskDetails.repoSummary ? (
                             <p className="text-sm text-muted-foreground italic">Repository summary not available</p>
                         ) : (
                             <>
                                 {taskDetails.repoSummary.repoUrl && (
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">Repository URL</p>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Repository URL</p>
                                         <a
                                             href={taskDetails.repoSummary.repoUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-sm text-primary hover:underline"
+                                            className="text-sm text-primary hover:underline font-medium break-all"
                                         >
                                             {taskDetails.repoSummary.repoUrl}
                                         </a>
@@ -103,31 +103,31 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
 
     const renderPlan = () => {
         return (
-            <Card className="w-full mb-4">
+            <Card className="w-full mb-3 border-border/50">
                 <CardHeader
-                    className="cursor-pointer hover:bg-muted/50 pb-3"
+                    className="cursor-pointer hover:bg-muted/50 transition-colors pb-4"
                     onClick={() => toggleSection("plan")}
                 >
                     <div className="flex items-center justify-between">
                         <div>
-                            <CardTitle className="text-base">
+                            <CardTitle className="text-base font-semibold">
                                 {taskDetails.action === "REVIEW_PR" ? "Review" : "Implementation Plan"}
                             </CardTitle>
-                            <CardDescription>Plan details for this task</CardDescription>
+                            <CardDescription className="text-sm mt-1">Plan details for this task</CardDescription>
                         </div>
                         {expandedSections.plan ? (
-                            <ChevronUp className="w-5 h-5" />
+                            <ChevronUp className="w-5 h-5 text-muted-foreground" />
                         ) : (
-                            <ChevronDown className="w-5 h-5" />
+                            <ChevronDown className="w-5 h-5 text-muted-foreground" />
                         )}
                     </div>
                 </CardHeader>
                 {expandedSections.plan && (
-                    <CardContent>
+                    <CardContent className="pt-0">
                         {!taskDetails.plan ? (
                             <p className="text-sm text-muted-foreground italic">Plan not available</p>
                         ) : (
-                            <div className="bg-muted rounded-lg p-4 max-h-96 overflow-y-auto prose prose-sm max-w-none">
+                            <div className="bg-muted/50 rounded-lg p-4 max-h-96 overflow-y-auto prose prose-sm max-w-none border border-border">
                                 <ReactMarkdown
                                     components={{
                                         h2: ({ children }: any) => (
@@ -255,11 +255,11 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     return (
-        <div className="w-full space-y-4 mb-6 border-t border-border pt-4">
-            <div className="flex items-center gap-2 mb-4">
+        <div className="w-full mb-6 border-t border-border pt-6">
+            <div className="flex items-center gap-2 mb-5">
                 <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-foreground">Task History</h3>
-                    <p className="text-xs text-muted-foreground">Details from task execution</p>
+                    <h3 className="text-lg font-semibold text-foreground">Task History</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Complete details from task execution</p>
                 </div>
             </div>
             {renderRepoSummary()}
