@@ -4,9 +4,11 @@
     "module": "CommonJS",
     "rootDir": "src",
     "outDir": "dist",
-    "strict": true,
+    "moduleResolution": "node",
+    "lib": ["ES2020"],
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "strict": false
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
