@@ -50,7 +50,7 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
         switch (status) {
             case "COMPLETED":
             case "REVIEW_COMPLETE":
-                return "bg-green-500/20 text-green-600 dark:text-green-400";
+                return "bg-secondary/20 text-secondary-foreground";
             case "EXECUTING":
             case "PLANNING":
                 return "bg-primary/20 text-primary";
@@ -66,7 +66,7 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
             {/* Mobile Overlay */}
             {isMobile && isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                    className="fixed inset-0 bg-foreground/50 z-40 md:hidden"
                     onClick={onClose}
                     aria-hidden="true"
                 />

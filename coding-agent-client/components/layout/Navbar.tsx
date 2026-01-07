@@ -8,6 +8,7 @@ import { Sparkles, Menu } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import { useAuthStore } from "@/lib/store/userStore";
 import { useSidebarToggle } from "@/lib/store/sidebarToggleStore";
+import { ModeToggle } from "@/components/layout/toggleButton";
 
 export function Navbar() {
   const router = useRouter();
@@ -67,6 +68,9 @@ export function Navbar() {
 
           {/* Navigation Items */}
           <div className="flex items-center gap-4">
+            {/* Theme Toggle */}
+            <ModeToggle />
+            
             {isAuth ? (
               <>
                 {/* Chat Link */}
@@ -88,7 +92,7 @@ export function Navbar() {
                 <Button
                   onClick={handleLogout}
                   variant="outline"
-                  className="bg-destructive hover:bg-destructive/50 text-accent hover:text-foreground hover:cursor-pointer"
+                  className="bg-destructive text-foreground hover:bg-destructive/50 hover:text-foreground hover:cursor-pointer"
                 >
                   Logout
                 </Button>
