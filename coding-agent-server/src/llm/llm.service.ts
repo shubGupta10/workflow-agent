@@ -4,20 +4,20 @@ import { LLMResult } from "./llm.types";
 export function understandRepo(prompt: string): Promise<LLMResult> {
     return executeLLM({
         prompt,
-        model: "gemini-2.5-flash-lite",
+        useCase: "REPO_UNDERSTANDING",
     });
 }
 
 export function generatePlanLLM(prompt: string): Promise<LLMResult> {
     return executeLLM({
         prompt,
-        model: "gemini-2.5-flash-lite",
+        useCase: "PLAN_GENERATION",
     });
 }
 
 export function reviewPullRequest(prompt: string): Promise<LLMResult> {
     return executeLLM({
         prompt,
-        model: "gemini-2.5-flash-lite",
+        useCase: "PR_REVIEW",
     });
 }
