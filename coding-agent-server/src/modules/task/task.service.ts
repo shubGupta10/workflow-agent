@@ -2,7 +2,8 @@ import { TaskStatus } from '../../constants/enum';
 import { applyFileChanges, cloneRepoInSandbox, commitChange, createAndCheckoutBranch, createPullRequest, pushBranch } from '../../lib/github/repoUtils';
 import { runSandboxCommand, startSandbox, stopSandbox } from '../../lib/sandbox/sandBoxUtils';
 import { buildPlanningPrompt, buildReviewPrompt } from '../../llm/llm.prompt';
-import { generateContent } from '../../llm/llm.service';
+import { generatePlanLLM, reviewPullRequest } from '../../llm/llm.service';
+import { User } from '../user/user.model';
 import { Task, TaskAction } from './task.model';
 import { CreateTaskRecordInput } from './task.types';
 import { createTaskRecord, fetchPRsDiff, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
@@ -136,20 +137,45 @@ const generatePlan = async (taskId: string) => {
     }
 
     //  call LLM
-    const llmResponse = await generateContent(prompt);
+    let llmResponse;
+
+    if (llmResponse.action === TaskAction.REVIEW_PR) {
+        llmResponse = await reviewPullRequest(prompt);
+    } else {
+        llmResponse = await generatePlanLLM(prompt);
+    }
+
     if (!llmResponse) {
         throw new Error("Failed to generate plan from LLM");
     }
+
+    //store llm usage
+    const usage = llmResponse.usage;
+
+    const llmUsagePayload = usage
+        ? {
+            purpose:
+                existingTask.action === TaskAction.REVIEW_PR
+                    ? "PR_REVIEW"
+                    : "PLAN_GENERATION",
+            model: llmResponse.model,
+            inputTokens: usage.inputTokens,
+            outputTokens: usage.outputTokens,
+            totalTokens: usage.totalTokens,
+            createdAt: new Date(),
+        }
+        : undefined;
 
     //  save plan on Task
     await Task.findByIdAndUpdate(
         taskId,
         {
-            plan: llmResponse,
+            plan: llmResponse.text,
             status: nextStatus,
+            llmUsage: llmUsagePayload,
             updatedAt: new Date(),
             ...(nextStatus === TaskStatus.COMPLETED ? {
-                result: { review: llmResponse },
+                result: { review: llmResponse.text },
                 executionLog: { message: "Review generated successfully. No execution required." }
             } : {})
         },
@@ -210,7 +236,6 @@ const executeTask = async (taskId: string) => {
     // Only query user if userId is a valid MongoDB ObjectId
     if (existingTask.userId && /^[0-9a-fA-F]{24}$/.test(existingTask.userId)) {
         try {
-            const { User } = require('../user/user.model');
             const user = await User.findById(existingTask.userId).select('+githubAccessToken');
             githubToken = user?.githubAccessToken;
         } catch (err) {

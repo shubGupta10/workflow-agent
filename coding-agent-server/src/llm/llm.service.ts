@@ -1,18 +1,23 @@
-import genAI from "./llm.client";
+import { executeLLM } from "./llm.executor";
+import { LLMResult } from "./llm.types";
 
-export const generateContent = async (prompt: string) => {
-    try {
-        const model = genAI.getGenerativeModel({
-            model: "gemini-2.5-flash-lite",
-        })
+export function understandRepo(prompt: string): Promise<LLMResult> {
+    return executeLLM({
+        prompt,
+        model: "gemini-2.5-flash-lite",
+    });
+}
 
-        const result = await model.generateContent(prompt);
+export function generatePlanLLM(prompt: string): Promise<LLMResult> {
+    return executeLLM({
+        prompt,
+        model: "gemini-2.5-flash-lite",
+    });
+}
 
-        const response = result.response;
-
-        return response.text();
-    } catch (error) {
-        console.error('LLM generation failed:', error);
-        throw new Error('Failed to generate response from Gemini');
-    }
+export function reviewPullRequest(prompt: string): Promise<LLMResult> {
+    return executeLLM({
+        prompt,
+        model: "gemini-2.5-flash-lite",
+    });
 }

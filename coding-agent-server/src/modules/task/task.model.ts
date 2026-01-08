@@ -33,6 +33,14 @@ export interface ITask extends Document {
   result?: Record<string, unknown>;
   error?: string;
   userId?: string;
+  llmUsage?: {
+    purpose: string;
+    model: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    createdAt: Date;
+  },
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +78,14 @@ const taskSchema = new Schema<ITask>(
       required: false,
     },
     userId: String,
+    llmUsage: {
+      purpose: { type: String },
+      model: { type: String },
+      inputTokens: { type: Number },
+      outputTokens: { type: Number },
+      totalTokens: { type: Number },
+      createdAt: { type: Date, default: Date.now },
+    }
   },
   {
     timestamps: true,
