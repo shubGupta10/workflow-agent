@@ -1,7 +1,7 @@
 import { CreateTaskRecordInput, RepoSummary } from "./task.types";
 import { Task } from "./task.model";
 import { execAsync, INTERNAL_ANALYSIS_SCRIPT } from "../../constants/repoIngest";
-import { generateContent } from "../../llm/llm.service";
+import { executeLLM } from "../../llm/llm.executor";
 import octokit from "../../lib/Octokit";
 
 export async function createTaskRecord(taskData: CreateTaskRecordInput) {
@@ -155,7 +155,12 @@ export async function generateCodeFromPlan(plan: string, repoUrl: string) {
     START YOUR RESPONSE WITH [ AND END WITH ] - NO OTHER TEXT.
     `;
 
-    const response = await generateContent(prompt);
+    const llmResponse = await executeLLM({
+        prompt,
+        useCase: "CODE_GENERATION"
+    });
+
+    const response = llmResponse.text;
 
     console.log('[DEBUG] Raw LLM Response (first 500 chars):', response.substring(0, 500));
 

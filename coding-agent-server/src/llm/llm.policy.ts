@@ -1,7 +1,8 @@
 export type LLMUseCase =
     | "REPO_UNDERSTANDING"
     | "PLAN_GENERATION"
-    | "PR_REVIEW";
+    | "PR_REVIEW"
+    | "CODE_GENERATION";
 
 export const LLM_POLICY: Record<
     LLMUseCase,
@@ -27,5 +28,11 @@ export const LLM_POLICY: Record<
         model: "gemini-2.5-pro",
         maxOutputTokens: 4096,
         temperature: 0.1,
+    },
+
+    CODE_GENERATION: {
+        model: "gemini-2.5-flash-lite",
+        maxOutputTokens: 8192,
+        temperature: 0.3,
     },
 };

@@ -139,7 +139,7 @@ const generatePlan = async (taskId: string) => {
     //  call LLM
     let llmResponse;
 
-    if (llmResponse.action === TaskAction.REVIEW_PR) {
+    if (existingTask.action === TaskAction.REVIEW_PR) {
         llmResponse = await reviewPullRequest(prompt);
     } else {
         llmResponse = await generatePlanLLM(prompt);
