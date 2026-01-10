@@ -1,5 +1,7 @@
 import { TaskStatus } from '../../constants/enum';
 import { applyFileChanges, cloneRepoInSandbox, commitChange, createAndCheckoutBranch, createPullRequest, pushBranch } from '../../lib/github/repoUtils';
+import redis, { PR_REVIEW_CACHE_TTL } from '../../lib/redis';
+import { getPrReviewCacheKey } from '../../lib/redis/redisFunctions';
 import { runSandboxCommand, startSandbox, stopSandbox } from '../../lib/sandbox/sandBoxUtils';
 import { buildPlanningPrompt, buildReviewPrompt } from '../../llm/llm.prompt';
 import { generatePlanLLM, reviewPullRequest } from '../../llm/llm.service';
@@ -103,6 +105,8 @@ const generatePlan = async (taskId: string) => {
     //  build planning prompt
     let prompt;
     let nextStatus = TaskStatus.AWAITING_APPROVAL;
+    let llmResponse;
+
 
     if (existingTask.action === TaskAction.REVIEW_PR) {
         let prUrl = existingTask.userInput || "";
@@ -113,8 +117,30 @@ const generatePlan = async (taskId: string) => {
             // ignore JSON parse error
         }
 
-
         const diff = await fetchPRsDiff(prUrl as string);
+
+        const cacheKey = getPrReviewCacheKey(prUrl as string, diff);
+
+        try {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                const cacheReview = JSON.parse(cached);
+
+                await Task.findByIdAndUpdate(taskId, {
+                    result: { review: cacheReview },
+                    executionLog: { message: "Review retrieved from cache. No execution required." },
+                    status: TaskStatus.COMPLETED,
+                    updatedAt: new Date()
+                });
+
+                return {
+                    text: cacheReview,
+                    model: 'cached'
+                }
+            }
+        } catch (error) {
+            console.warn("[REDIS] PR review cache read failed");
+        }
 
         prompt = buildReviewPrompt({
             repoSummary: existingTask.repoSummary,
@@ -122,31 +148,39 @@ const generatePlan = async (taskId: string) => {
             userInput: typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput)
         });
 
+        llmResponse = await reviewPullRequest(prompt);
+        if (!llmResponse) {
+            throw new Error("Failed to generate PR review");
+        }
+
+        try {
+            await redis.set(
+                cacheKey,
+                JSON.stringify(llmResponse.text),
+                'EX',
+                PR_REVIEW_CACHE_TTL
+            )
+        } catch (error) {
+            console.warn("[REDIS] PR review cache write failed");
+        }
+
         nextStatus = TaskStatus.COMPLETED
     } else {
         prompt = await buildPlanningPrompt({
             repoSummary: existingTask.repoSummary,
             action: existingTask.action,
-            // Ensure userInput is a string for the prompt
             userInput: existingTask.userInput
                 ? (typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput))
                 : undefined
         });
 
-        nextStatus = TaskStatus.AWAITING_APPROVAL;
-    }
-
-    //  call LLM
-    let llmResponse;
-
-    if (existingTask.action === TaskAction.REVIEW_PR) {
-        llmResponse = await reviewPullRequest(prompt);
-    } else {
         llmResponse = await generatePlanLLM(prompt);
-    }
 
-    if (!llmResponse) {
-        throw new Error("Failed to generate plan from LLM");
+        if (!llmResponse) {
+            throw new Error("Failed to generate plan from LLM");
+        }
+
+        nextStatus = TaskStatus.AWAITING_APPROVAL;
     }
 
     //store llm usage
@@ -170,14 +204,15 @@ const generatePlan = async (taskId: string) => {
     await Task.findByIdAndUpdate(
         taskId,
         {
-            plan: llmResponse.text,
+            plan: existingTask.action === TaskAction.REVIEW_PR ? undefined : llmResponse.text,
+            result: existingTask.action === TaskAction.REVIEW_PR ? { review: llmResponse.text} : undefined,
             status: nextStatus,
             llmUsage: llmUsagePayload,
+            executionLog:
+                existingTask.action === TaskAction.REVIEW_PR
+                    ? { message: "PR review generated successfully." }
+                    : undefined,
             updatedAt: new Date(),
-            ...(nextStatus === TaskStatus.COMPLETED ? {
-                result: { review: llmResponse.text },
-                executionLog: { message: "Review generated successfully. No execution required." }
-            } : {})
         },
         { new: true }
     )

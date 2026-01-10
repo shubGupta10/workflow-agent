@@ -9,6 +9,14 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+
+  redis:
+    image: redis:7
+    container_name: coding-agent-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
   
 volumes:
   mongodb_data:

@@ -3,6 +3,21 @@ import { Task } from "./task.model";
 import { execAsync, INTERNAL_ANALYSIS_SCRIPT } from "../../constants/repoIngest";
 import { executeLLM } from "../../llm/llm.executor";
 import octokit from "../../lib/Octokit";
+import crypto from "crypto";
+import redis, { CACHE_TTL_SECONDS } from "../../lib/redis";
+
+function normalizeRepoUrl(repoUrl: string) {
+    return repoUrl
+        .trim()
+        .replace(/\.git$/, "")
+        .toLowerCase();
+}
+
+function getRepoCacheKey(repoUrl: string) {
+    const normalized = normalizeRepoUrl(repoUrl);
+    const hash = crypto.createHash("sha256").update(normalized).digest("hex");
+    return `repo:summary:${hash}`;
+}
 
 export async function createTaskRecord(taskData: CreateTaskRecordInput) {
     const { repoUrl, status, userId } = taskData;
@@ -35,6 +50,23 @@ export async function updateTaskStatus(taskId: string, status: string) {
 }
 
 export async function understandRepo(repoUrl: string, taskId: string) {
+
+    const cacheKey = getRepoCacheKey(repoUrl);
+
+    try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return {
+                taskId,
+                repoUrl,
+                ...JSON.parse(cached),
+                _cached: true
+            };
+        }
+    } catch (error) {
+        console.warn("[REDIS] Cache read failed, continuing without cache");
+    }
+
     const containerName = `sandbox-${taskId}`
     const image = `node:18-alpine`
 
@@ -82,13 +114,19 @@ export async function understandRepo(repoUrl: string, taskId: string) {
         }
 
         const result = JSON.parse(trimmedOutput);
+
+        await redis.set(
+            cacheKey,
+            JSON.stringify(result),
+            'EX',
+            CACHE_TTL_SECONDS
+        )
         return {
             taskId,
             repoUrl,
             ...result
         };
     } catch (error) {
-        // Ensure cleanup happens even if something fails
         try { await execAsync(`docker stop ${containerName}`); } catch (e) { }
         throw error;
     }
