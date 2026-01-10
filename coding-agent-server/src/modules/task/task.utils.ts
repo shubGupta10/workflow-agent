@@ -50,7 +50,6 @@ export async function updateTaskStatus(taskId: string, status: string) {
 }
 
 export async function understandRepo(repoUrl: string, taskId: string) {
-
     const cacheKey = getRepoCacheKey(repoUrl);
 
     try {
@@ -60,74 +59,71 @@ export async function understandRepo(repoUrl: string, taskId: string) {
                 taskId,
                 repoUrl,
                 ...JSON.parse(cached),
-                _cached: true
+                _cached: true,
             };
         }
-    } catch (error) {
-        console.warn("[REDIS] Cache read failed, continuing without cache");
-    }
+    } catch { }
 
-    const containerName = `sandbox-${taskId}`
-    const image = `node:18-alpine`
+    const containerName = `sandbox-${taskId}`;
+    const image = "node:18-alpine";
 
     try {
-        console.log(`[DEBUG] Starting docker container: ${containerName}`)
-        // Start sandbox
-        const { stdout: runOut } = await execAsync(`docker run -d --name ${containerName} --rm --workdir /app ${image} tail -f /dev/null`);
-        console.log(`[DEBUG] Container created: ${runOut.trim()}`)
+        await updateTaskProgress(taskId, "SANDBOX", "Starting sandbox environment");
 
-        // Install git
-        console.log(`[DEBUG] Installing git...`)
-        await execAsync(`docker exec ${containerName} apk add --no-cache git`)
+        await execAsync(
+            `docker run -d --name ${containerName} --rm --workdir /app ${image} tail -f /dev/null`
+        );
 
-        console.log(`[DEBUG] Cloning repo: ${repoUrl}`)
-        const { stdout: cloneOut, stderr: cloneErr } = await execAsync(`docker exec ${containerName} git clone --depth 1 ${repoUrl} .`)
-        console.log(`[DEBUG] Clone stdout: ${cloneOut}`)
-        // Git writes progress to stderr, so we only log it, we don't treat it as a crash
-        if (cloneErr) console.log(`[DEBUG] Clone stderr: ${cloneErr}`)
+        await execAsync(`docker exec ${containerName} apk add --no-cache git`);
 
-        // --- FIX START ---
-        console.log(`[DEBUG] Creating analysis script...`)
-        const scriptPath = '/tmp/analyze.js'
+        await updateTaskProgress(taskId, "REPO_CLONE", "Cloning repository");
 
-        // 1. Base64 encode the script to bypass all shell escaping issues
-        const scriptBase64 = Buffer.from(INTERNAL_ANALYSIS_SCRIPT).toString('base64');
+        await execAsync(
+            `docker exec ${containerName} git clone --depth 1 ${repoUrl} .`
+        );
 
-        // 2. Decode it inside the container and run it
-        // We use 'base64 -d' (standard in Alpine Linux) to decode
-        const { stdout, stderr } = await execAsync(
+        await updateTaskProgress(taskId, "REPO_ANALYSIS", "Analyzing project structure");
+
+        const scriptPath = "/tmp/analyze.js";
+        const scriptBase64 = Buffer.from(INTERNAL_ANALYSIS_SCRIPT).toString("base64");
+
+        const { stdout } = await execAsync(
             `docker exec ${containerName} sh -c "echo '${scriptBase64}' | base64 -d > ${scriptPath} && node ${scriptPath}"`
-        )
-        // --- FIX END ---
+        );
 
-        console.log(`[DEBUG] Script stdout: ${stdout}`)
-        console.log(`[DEBUG] Script stderr: ${stderr}`)
-
-        // Cleanup
-        await execAsync(`docker stop ${containerName}`)
+        await execAsync(`docker stop ${containerName}`);
 
         const trimmedOutput = stdout.trim();
-
         if (!trimmedOutput) {
-            // If stderr has content, it might be a Node runtime error
-            throw new Error(`No output from analysis script. Stderr says: ${stderr || 'Empty'}`);
+            throw new Error("Repository analysis produced no output");
         }
 
         const result = JSON.parse(trimmedOutput);
 
-        await redis.set(
-            cacheKey,
-            JSON.stringify(result),
-            'EX',
-            CACHE_TTL_SECONDS
-        )
+        await updateTaskProgress(
+            taskId,
+            "REPO_SUMMARY",
+            "Repository understanding completed"
+        );
+
+        try {
+            await redis.set(
+                cacheKey,
+                JSON.stringify(result),
+                "EX",
+                CACHE_TTL_SECONDS
+            );
+        } catch { }
+
         return {
             taskId,
             repoUrl,
-            ...result
+            ...result,
         };
     } catch (error) {
-        try { await execAsync(`docker stop ${containerName}`); } catch (e) { }
+        try {
+            await execAsync(`docker stop ${containerName}`);
+        } catch { }
         throw error;
     }
 }
@@ -275,4 +271,12 @@ export async function fetchPRsDiff(prUrl: string) {
     } catch (error: any) {
         throw new Error(`Failed to fetch PR diff: ${error.message}`);
     }
+}
+
+export async function updateTaskProgress(taskId: string, step: string, message: string) {
+    await Task.findByIdAndUpdate(taskId, {
+        currentStep: step,
+        progressMessage: message,
+        updatedAt: new Date()
+    })
 }

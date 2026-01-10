@@ -8,7 +8,7 @@ import { generatePlanLLM, reviewPullRequest } from '../../llm/llm.service';
 import { User } from '../user/user.model';
 import { Task, TaskAction } from './task.model';
 import { CreateTaskRecordInput } from './task.types';
-import { createTaskRecord, fetchPRsDiff, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
+import { createTaskRecord, fetchPRsDiff, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskProgress, updateTaskStatus } from './task.utils';
 
 
 const createTask = async (input: CreateTaskRecordInput) => {
@@ -82,6 +82,7 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
 }
 
 const generatePlan = async (taskId: string) => {
+
     // fetch Task by taskId
     if (!taskId) {
         throw new Error("Missing taskId to generate plan");
@@ -109,15 +110,16 @@ const generatePlan = async (taskId: string) => {
 
 
     if (existingTask.action === TaskAction.REVIEW_PR) {
+        await updateTaskProgress(taskId, "PR_REVIEW", "Preparing pull request diff");
         let prUrl = existingTask.userInput || "";
         try {
             const parsed = JSON.parse(prUrl as string);
             if (parsed.prUrl) prUrl = parsed.prUrl;
-        } catch (error) {
-            // ignore JSON parse error
-        }
+        } catch { }
 
         const diff = await fetchPRsDiff(prUrl as string);
+
+        await updateTaskProgress(taskId, "PR_REVIEW", "Generating AI review");
 
         const cacheKey = getPrReviewCacheKey(prUrl as string, diff);
 
@@ -166,6 +168,8 @@ const generatePlan = async (taskId: string) => {
 
         nextStatus = TaskStatus.COMPLETED
     } else {
+        await updateTaskProgress(taskId, "PLANNING", "Building execution plan");
+
         prompt = await buildPlanningPrompt({
             repoSummary: existingTask.repoSummary,
             action: existingTask.action,
@@ -173,6 +177,8 @@ const generatePlan = async (taskId: string) => {
                 ? (typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput))
                 : undefined
         });
+
+        await updateTaskProgress(taskId, "PLANNING", "Calling AI planner");
 
         llmResponse = await generatePlanLLM(prompt);
 
@@ -205,7 +211,7 @@ const generatePlan = async (taskId: string) => {
         taskId,
         {
             plan: existingTask.action === TaskAction.REVIEW_PR ? undefined : llmResponse.text,
-            result: existingTask.action === TaskAction.REVIEW_PR ? { review: llmResponse.text} : undefined,
+            result: existingTask.action === TaskAction.REVIEW_PR ? { review: llmResponse.text } : undefined,
             status: nextStatus,
             llmUsage: llmUsagePayload,
             executionLog:
@@ -216,6 +222,12 @@ const generatePlan = async (taskId: string) => {
         },
         { new: true }
     )
+
+    if (existingTask.action === TaskAction.REVIEW_PR) {
+        await updateTaskProgress(taskId, "PR_REVIEW", "Review generated successfully");
+    } else {
+        await updateTaskProgress(taskId, "PLANNING", "Plan generated successfully");
+    }
 
     return llmResponse;
 }
@@ -309,9 +321,11 @@ const executeTask = async (taskId: string) => {
     const logs: string[] = [];
 
     try {
+        await updateTaskProgress(taskId, "EXECUTION", "Starting sandbox");
         logs.push("Starting sandbox environment...");
         containerId = await startSandbox(taskId);
 
+        await updateTaskProgress(taskId, "EXECUTION", "Applying code changes");
         logs.push(`Cloning repository ${existingTask.repoUrl}...`);
         repoName = await cloneRepoInSandbox(containerId, existingTask.repoUrl, githubToken);
         logs.push(`Repository cloned as: ${repoName}`);
@@ -359,12 +373,14 @@ const executeTask = async (taskId: string) => {
             }
         }
 
+        await updateTaskProgress(taskId, "EXECUTION", "Running checks");
         logs.push("Committing changes...");
         await commitChange(containerId, `Task ${taskId} - Applied planned changes`, repoName!);
 
         logs.push("Pushing branch to remote...");
         await pushBranch(containerId, branchName, repoName!, githubToken);
 
+        await updateTaskProgress(taskId, "EXECUTION", "Finalizing result");
         logs.push("Creating Pull Request...");
         const prUrl = await createPullRequest(
             existingTask.repoUrl,
@@ -380,12 +396,15 @@ const executeTask = async (taskId: string) => {
         existingTask.status = TaskStatus.COMPLETED;
         await existingTask.save();
 
+        await updateTaskProgress(taskId, "COMPLETED", "Task completed successfully");
+
         return existingTask;
 
     } catch (error: any) {
         console.error("Task Execution Failed:", error);
         logs.push(`ERROR: ${error.message}`);
 
+        await updateTaskProgress(taskId, "FAILED", error.message);
         await Task.findByIdAndUpdate(taskId, {
             status: TaskStatus.FAILED,
             executionLog: { status: 'FAILED', logs, error: error.message },
