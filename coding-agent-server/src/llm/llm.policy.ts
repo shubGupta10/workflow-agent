@@ -13,7 +13,7 @@ export const LLM_POLICY: Record<
     }
 > = {
     REPO_UNDERSTANDING: {
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-2.5-flash",
         maxOutputTokens: 1024,
         temperature: 0.1,
     },
@@ -25,7 +25,7 @@ export const LLM_POLICY: Record<
     },
 
     PR_REVIEW: {
-        model: "gemini-2.5-pro",
+        model: "gemini-2.5-flash",
         maxOutputTokens: 4096,
         temperature: 0.1,
     },

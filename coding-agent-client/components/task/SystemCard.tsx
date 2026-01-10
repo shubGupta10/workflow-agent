@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionType, ACTION_LABELS } from "@/lib/types";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Components } from "react-markdown";
 import { Clipboard, Wrench, ClipboardList, Check, CheckCircle, ExternalLink, X, Sparkles } from "lucide-react";
 
 interface ActionSelectionCardProps {
@@ -88,6 +88,30 @@ interface ReviewDisplayCardProps {
 }
 
 export function ReviewDisplayCard({ review }: ReviewDisplayCardProps) {
+    const components: Components = {
+        h2: ({ children }) => (
+            <h2 className="text-lg font-semibold text-foreground mt-6 first:mt-0 mb-4">{children}</h2>
+        ),
+        h3: ({ children }) => (
+            <h3 className="text-base font-semibold text-foreground mt-4 mb-3">{children}</h3>
+        ),
+        p: ({ children }) => (
+            <p className="text-sm text-foreground leading-relaxed mb-4">{children}</p>
+        ),
+        ul: ({ children }) => (
+            <ul className="space-y-2 mb-4">{children}</ul>
+        ),
+        li: ({ children }) => (
+            <li className="flex gap-3 text-sm leading-relaxed">
+                <span className="text-primary mt-1.5 shrink-0">•</span>
+                <span className="text-muted-foreground flex-1">{children}</span>
+            </li>
+        ),
+        strong: ({ children }) => (
+            <strong className="font-semibold text-foreground">{children}</strong>
+        ),
+    };
+
     return (
         <Card className="w-full">
             <CardHeader className="pb-4 border-b border-border">
@@ -103,31 +127,7 @@ export function ReviewDisplayCard({ review }: ReviewDisplayCardProps) {
             </CardHeader>
             <CardContent className="pt-6">
                 <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground">
-                    <ReactMarkdown
-                        components={{
-                            h2: ({ children }: any) => (
-                                <h2 className="text-lg font-semibold text-foreground mt-6 first:mt-0 mb-4">{children}</h2>
-                            ),
-                            h3: ({ children }: any) => (
-                                <h3 className="text-base font-semibold text-foreground mt-4 mb-3">{children}</h3>
-                            ),
-                            p: ({ children }: any) => (
-                                <p className="text-sm text-foreground leading-relaxed mb-4">{children}</p>
-                            ),
-                            ul: ({ children }: any) => (
-                                <ul className="space-y-2 mb-4">{children}</ul>
-                            ),
-                            li: ({ children }: any) => (
-                                <li className="flex gap-3 text-sm leading-relaxed">
-                                    <span className="text-primary mt-1.5 shrink-0">•</span>
-                                    <span className="text-muted-foreground flex-1">{children}</span>
-                                </li>
-                            ),
-                            strong: ({ children }: any) => (
-                                <strong className="font-semibold text-foreground">{children}</strong>
-                            ),
-                        }}
-                    >
+                    <ReactMarkdown components={components}>
                         {review}
                     </ReactMarkdown>
                 </div>

@@ -7,10 +7,6 @@ services:
     restart: unless-stopped
     ports:
       - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: coding_agent
-      MONGO_INITDB_ROOT_PASSWORD: coding_agent_password
-      MONGO_INITDB_DATABASE: coding_agent_db
     volumes:
       - mongodb_data:/data/db
   

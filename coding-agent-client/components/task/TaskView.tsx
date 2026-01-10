@@ -243,10 +243,16 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
             if (planResult.success && planResult.data) {
                 let content: string;
 
+                // Extract text from LLM response structure
                 if (typeof planResult.data === 'string') {
                     content = planResult.data;
+                } else if (planResult.data.data?.text) {
+                    // Server returns { message, data: { text, usage } }
+                    content = planResult.data.data.text;
+                } else if (planResult.data.text) {
+                    content = planResult.data.text;
                 } else if (planResult.data.data) {
-                    content = planResult.data.data;
+                    content = typeof planResult.data.data === 'string' ? planResult.data.data : JSON.stringify(planResult.data.data);
                 } else if (planResult.data.plan) {
                     content = planResult.data.plan;
                 } else if (planResult.data.result) {

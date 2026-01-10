@@ -239,4 +239,25 @@ export const getTaskDetails = async (taskId: string) => {
     return data;
 };
 
+export const getLLMUsage = async () => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const url = `${appURl}/api/auth/llm-usage`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getLLMUsage error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
 

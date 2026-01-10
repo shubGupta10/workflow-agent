@@ -83,6 +83,16 @@ export function Navbar() {
                   </Button>
                 </Link>
 
+                {/* Profile Link */}
+                <Link href="/profile">
+                  <Button
+                    variant={pathname === "/profile" ? "default" : "ghost"}
+                    className="text-foreground bg-background hover:bg-accent hover:text-foreground hover:cursor-pointer"
+                  >
+                    Profile
+                  </Button>
+                </Link>
+
                 {/* User Info / Logout */}
                 {user && (
                   <span className="text-sm text-muted-foreground hidden sm:inline">
