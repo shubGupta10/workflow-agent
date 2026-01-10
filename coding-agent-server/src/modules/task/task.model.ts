@@ -41,8 +41,6 @@ export interface ITask extends Document {
     totalTokens?: number;
     createdAt: Date;
   },
-  currentStep?: string;
-  progressMessage?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,8 +86,6 @@ const taskSchema = new Schema<ITask>(
       totalTokens: { type: Number },
       createdAt: { type: Date, default: Date.now },
     },
-    currentStep: String,
-    progressMessage: String,
   },
   {
     timestamps: true,

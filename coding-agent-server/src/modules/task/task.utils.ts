@@ -272,11 +272,3 @@ export async function fetchPRsDiff(prUrl: string) {
         throw new Error(`Failed to fetch PR diff: ${error.message}`);
     }
 }
-
-export async function updateTaskProgress(taskId: string, step: string, message: string) {
-    await Task.findByIdAndUpdate(taskId, {
-        currentStep: step,
-        progressMessage: message,
-        updatedAt: new Date()
-    })
-}
