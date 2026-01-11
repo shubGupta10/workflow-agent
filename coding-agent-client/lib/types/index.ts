@@ -77,8 +77,19 @@ export interface RepoSummary {
     entryPoints: string[];
 }
 
+export interface TimelineEntry {
+    role: "system" | "user" | "agent";
+    type: string;
+    content: string;
+    createdAt: string;
+    _id: string;
+}
+
 export interface ExecutionLog {
-    message: string;
+    message?: string;
+    status?: string;
+    logs?: string[];
+    error?: string;
 }
 
 export interface TaskResult {
@@ -92,10 +103,11 @@ export interface TaskDetails {
     status: TaskStatus;
     action: ActionType;
     userInput: string;
+    timeline?: TimelineEntry[];
     repoSummary: RepoSummary;
     plan: string;
     executionLog: ExecutionLog;
-    result: TaskResult;
+    result?: TaskResult;
     createdAt: string;
     updatedAt: string;
 }

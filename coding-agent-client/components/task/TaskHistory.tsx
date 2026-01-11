@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { TimelineChat } from "./TimelineChat";
 
 interface TaskHistoryProps {
     taskDetails: TaskDetails;
@@ -26,6 +27,11 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderRepoSummary = () => {
+        // Don't show if no repo summary data
+        if (!taskDetails.repoSummary || !taskDetails.repoSummary.repoUrl) {
+            return null;
+        }
+
         return (
             <Card className="w-full mb-3 border-border/50">
                 <CardHeader
@@ -102,6 +108,11 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderPlan = () => {
+        // Don't show if no plan
+        if (!taskDetails.plan) {
+            return null;
+        }
+
         return (
             <Card className="w-full mb-3 border-border/50">
                 <CardHeader
@@ -163,6 +174,66 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     const renderExecutionLog = () => {
+        // Don't show if no execution log data at all
+        if (!taskDetails.executionLog || (!taskDetails.executionLog.logs && !taskDetails.executionLog.message)) {
+            return null;
+        }
+
+        // Render new logs format if available
+        if (taskDetails.executionLog?.logs && taskDetails.executionLog.logs.length > 0) {
+            const isFailed = taskDetails.executionLog.status === "FAILED";
+            return (
+                <Card className={`w-full mb-4 ${isFailed ? "border-destructive/50" : "border-border/50"}`}>
+                    <CardHeader
+                        className="cursor-pointer hover:bg-muted/50 pb-3"
+                        onClick={() => toggleSection("execution")}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base">Execution Logs</CardTitle>
+                                <CardDescription>
+                                    {taskDetails.executionLog.logs.length} log entries
+                                    {isFailed && <span className="text-destructive ml-2">(Failed)</span>}
+                                </CardDescription>
+                            </div>
+                            {expandedSections.execution ? (
+                                <ChevronUp className="w-5 h-5" />
+                            ) : (
+                                <ChevronDown className="w-5 h-5" />
+                            )}
+                        </div>
+                    </CardHeader>
+                    {expandedSections.execution && (
+                        <CardContent>
+                            <div className={`rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-xs ${isFailed
+                                    ? "bg-destructive/5 border border-destructive/20"
+                                    : "bg-muted/50 border border-border"
+                                }`}>
+                                {taskDetails.executionLog.logs.map((log, index) => (
+                                    <div
+                                        key={index}
+                                        className={`py-1 ${log.toLowerCase().includes("error")
+                                                ? "text-destructive font-semibold"
+                                                : "text-muted-foreground"
+                                            }`}
+                                    >
+                                        {log}
+                                    </div>
+                                ))}
+                            </div>
+                            {taskDetails.executionLog.error && (
+                                <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                                    <p className="text-xs font-semibold text-destructive mb-1">Error:</p>
+                                    <p className="text-xs text-destructive/90 font-mono">{taskDetails.executionLog.error}</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    )}
+                </Card>
+            );
+        }
+
+        // Fallback to old message format
         return (
             <Card className="w-full mb-4">
                 <CardHeader
@@ -199,6 +270,11 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     const renderResult = () => {
         const hasResult = taskDetails.result && Object.values(taskDetails.result).some((val) => val !== null && val !== undefined);
 
+        // Don't show if no result data
+        if (!hasResult) {
+            return null;
+        }
+
         return (
             <Card className="w-full mb-4">
                 <CardHeader
@@ -219,35 +295,31 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                 </CardHeader>
                 {expandedSections.result && (
                     <CardContent className="space-y-3">
-                        {!hasResult ? (
-                            <p className="text-sm text-muted-foreground italic">Task result not available</p>
-                        ) : (
-                            <>
-                                {taskDetails.result.prUrl && (
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">Pull Request</p>
-                                        <a
-                                            href={taskDetails.result.prUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm text-primary hover:underline"
-                                        >
-                                            {taskDetails.result.prUrl}
-                                        </a>
+                        <>
+                            {taskDetails.result?.prUrl && (
+                                <div>
+                                    <p className="text-sm font-medium text-foreground">Pull Request</p>
+                                    <a
+                                        href={taskDetails.result.prUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-primary hover:underline"
+                                    >
+                                        {taskDetails.result.prUrl}
+                                    </a>
+                                </div>
+                            )}
+                            {taskDetails.result?.review && (
+                                <div>
+                                    <p className="text-sm font-medium text-foreground mb-2">Review</p>
+                                    <div className="bg-muted rounded-lg p-3 max-h-48 overflow-y-auto">
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                            {taskDetails.result.review}
+                                        </p>
                                     </div>
-                                )}
-                                {taskDetails.result.review && (
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground mb-2">Review</p>
-                                        <div className="bg-muted rounded-lg p-3 max-h-48 overflow-y-auto">
-                                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                                {taskDetails.result.review}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </>
-                        )}
+                                </div>
+                            )}
+                        </>
                     </CardContent>
                 )}
             </Card>
@@ -255,13 +327,15 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
     };
 
     return (
-        <div className="w-full mb-6 border-t border-border pt-6">
-            <div className="flex items-center gap-2 mb-5">
-                <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground">Task History</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Complete details from task execution</p>
+        <div className="w-full mb-6">
+            {/* Timeline Chat */}
+            {taskDetails.timeline && taskDetails.timeline.length > 0 && (
+                <div className="mb-6">
+                    <TimelineChat timeline={taskDetails.timeline} />
                 </div>
-            </div>
+            )}
+
+            {/* Other sections as collapsible cards */}
             {renderRepoSummary()}
             {renderPlan()}
             {renderExecutionLog()}

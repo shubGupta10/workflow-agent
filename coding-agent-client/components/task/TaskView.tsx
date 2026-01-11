@@ -35,7 +35,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
     const {
         sessions,
         activeSessionId,
-        currentTaskId, // Now from store
+        currentTaskId,
         createSession,
         setActiveSession,
         addMessage,
@@ -43,7 +43,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
         updateSession,
         getActiveSession,
         removeLastMessage,
-        setCurrentTaskId, // Now from store
+        setCurrentTaskId,
         setTaskDetails,
         getTaskDetails: getCachedTaskDetails,
     } = useTaskStore();
@@ -76,19 +76,9 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
         }
     }, [activeSession?.taskId, currentTaskId, setCurrentTaskId]);
 
-    // Fetch task details only for completed tasks
+    // Fetch task details for any task with taskId
     useEffect(() => {
         if (!activeSession?.taskId) return;
-
-        // Only fetch details for completed/historical tasks
-        const isCompletedTask =
-            activeSession.status === "COMPLETED" ||
-            activeSession.status === "REVIEW_COMPLETE" ||
-            activeSession.status === "ERROR";
-
-        if (!isCompletedTask) {
-            return;
-        }
 
         const cachedDetails = getCachedTaskDetails(activeSession.taskId);
         if (cachedDetails) {
@@ -112,7 +102,40 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
         };
 
         fetchDetails();
-    }, [activeSession?.taskId, activeSession?.status, getCachedTaskDetails, setTaskDetails]);
+    }, [activeSession?.taskId, getCachedTaskDetails, setTaskDetails]);
+
+    // Re-show action selection or input prompt if user left at those states
+    useEffect(() => {
+        if (!activeSession) return;
+
+        const lastMessage = activeSession.messages[activeSession.messages.length - 1];
+
+        // If status is AWAITING_ACTION and last message is not action-selection, re-add it
+        if (activeSession.status === "AWAITING_ACTION") {
+            if (!lastMessage || lastMessage.systemType !== "action-selection") {
+                addMessage(activeSession.id, {
+                    type: "system",
+                    content: "Repository analyzed successfully! What would you like to do?",
+                    systemType: "action-selection"
+                });
+            }
+        }
+
+        // If status is AWAITING_INPUT and last message is not a prompt, re-add it
+        if (activeSession.status === "AWAITING_INPUT" && activeSession.selectedAction) {
+            if (!lastMessage || (lastMessage.type !== "system" && lastMessage.type !== "user")) {
+                const promptMessage = activeSession.selectedAction === "REVIEW_PR"
+                    ? "Please paste the PR URL you want me to review."
+                    : "Please describe what you want me to do.";
+
+                addMessage(activeSession.id, {
+                    type: "system",
+                    content: promptMessage
+                });
+            }
+        }
+    }, [activeSession?.status, activeSession?.id]);
+
 
     const getPlaceholder = (): string => {
         if (!activeSession) return "Paste GitHub repository URL…";
@@ -269,7 +292,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                     updateSessionStatus(activeSession.id, "REVIEW_COMPLETE");
                     addMessage(activeSession.id, {
                         type: "system",
-                        content: content, // Use extracted content
+                        content: content,
                         systemType: "review"
                     });
                 } else {
@@ -277,7 +300,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                     updateSessionStatus(activeSession.id, "AWAITING_APPROVAL");
                     addMessage(activeSession.id, {
                         type: "system",
-                        content: content, // Use extracted content
+                        content: content,
                         systemType: "plan-display"
                     });
                 }
@@ -460,19 +483,13 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                 <ScrollArea className="h-full">
                     <div className="px-4 py-6">
                         <div className="space-y-4">
-                            {/* Show task history ONLY for completed tasks */}
-                            {activeSession.taskId &&
-                                (activeSession.status === "COMPLETED" ||
-                                    activeSession.status === "REVIEW_COMPLETE" ||
-                                    activeSession.status === "ERROR") &&
-                                !taskDetailsLoading && (
-                                    (() => {
-                                        const taskDetails = getCachedTaskDetails(activeSession.taskId);
-                                        return taskDetails ? (
-                                            <TaskHistory taskDetails={taskDetails} />
-                                        ) : null;
-                                    })()
-                                )}
+                            {/* Show task history for any task with details */}
+                            {activeSession.taskId && !taskDetailsLoading && (() => {
+                                const taskDetails = getCachedTaskDetails(activeSession.taskId);
+                                return taskDetails ? (
+                                    <TaskHistory taskDetails={taskDetails} />
+                                ) : null;
+                            })()}
 
                             {activeSession.messages.length === 0 && !activeSession.taskId ? (
                                 <div className="flex flex-col items-center justify-center min-h-[500px] text-center px-4">
