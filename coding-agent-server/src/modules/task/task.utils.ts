@@ -5,6 +5,7 @@ import { executeLLM } from "../../llm/llm.executor";
 import octokit from "../../lib/Octokit";
 import crypto from "crypto";
 import redis, { CACHE_TTL_SECONDS } from "../../lib/redis";
+import { TimelineEnum } from "./task.enum";
 
 function normalizeRepoUrl(repoUrl: string) {
     return repoUrl
@@ -68,7 +69,6 @@ export async function understandRepo(repoUrl: string, taskId: string) {
     const image = "node:18-alpine";
 
     try {
-        await updateTaskProgress(taskId, "SANDBOX", "Starting sandbox environment");
 
         await execAsync(
             `docker run -d --name ${containerName} --rm --workdir /app ${image} tail -f /dev/null`
@@ -76,13 +76,10 @@ export async function understandRepo(repoUrl: string, taskId: string) {
 
         await execAsync(`docker exec ${containerName} apk add --no-cache git`);
 
-        await updateTaskProgress(taskId, "REPO_CLONE", "Cloning repository");
-
         await execAsync(
             `docker exec ${containerName} git clone --depth 1 ${repoUrl} .`
         );
 
-        await updateTaskProgress(taskId, "REPO_ANALYSIS", "Analyzing project structure");
 
         const scriptPath = "/tmp/analyze.js";
         const scriptBase64 = Buffer.from(INTERNAL_ANALYSIS_SCRIPT).toString("base64");
@@ -100,11 +97,6 @@ export async function understandRepo(repoUrl: string, taskId: string) {
 
         const result = JSON.parse(trimmedOutput);
 
-        await updateTaskProgress(
-            taskId,
-            "REPO_SUMMARY",
-            "Repository understanding completed"
-        );
 
         try {
             await redis.set(
@@ -141,6 +133,13 @@ export async function saveRepoSummary(taskId: string, repoSummary: RepoSummary) 
     existingTask.repoSummary = repoSummary as any;
     existingTask.updatedAt = new Date();
 
+    //add timeline entry
+    existingTask.timeline.push({
+        role: TimelineEnum.SYSTEM,
+        type: 'repo_summary_saved',
+        content: 'Repository summary analyzed and saved successfully',
+        createdAt: new Date()
+    })
 
     return await existingTask.save();
 }

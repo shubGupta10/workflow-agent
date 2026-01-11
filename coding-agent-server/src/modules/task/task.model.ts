@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { TimelineEnum } from './task.enum';
 
 export enum TaskStatus {
   CREATED = 'CREATED',
@@ -41,6 +42,12 @@ export interface ITask extends Document {
     totalTokens?: number;
     createdAt: Date;
   },
+  timeline: Array<{
+    role: 'system' | 'user' | 'agent';
+    type: string;
+    content: string;
+    createdAt: Date;
+  }>,
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,6 +93,13 @@ const taskSchema = new Schema<ITask>(
       totalTokens: { type: Number },
       createdAt: { type: Date, default: Date.now },
     },
+    timeline: [{
+      role: { type: String, enum: Object.values(TimelineEnum), required: true },
+      type: { type: String, required: true },
+      content: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now },
+    }
+    ]
   },
   {
     timestamps: true,
