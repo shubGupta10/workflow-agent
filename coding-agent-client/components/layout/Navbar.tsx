@@ -74,7 +74,7 @@ export function Navbar() {
             <Link href={isAuth ? "/chat" : "/"} className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
               <span className="text-lg font-semibold text-foreground">
-                Coding Agent
+                RepoFlow
               </span>
             </Link>
           </div>

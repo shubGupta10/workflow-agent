@@ -41,15 +41,10 @@ export function Hero() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4, duration: 0.5 }}
                         >
-                            <Link href="/chat">
-                                <Button className="rounded-xl bg-foreground text-background hover:bg-foreground/90 px-6 h-auto py-3 text-base">
-                                    Start with a GitHub Repo
-                                    <ArrowRight className="w-5 h-5 ml-2" />
-                                </Button>
-                            </Link>
                             <Link href="/login">
-                                <Button variant="outline" className="rounded-xl px-6 h-auto py-3 text-base">
-                                    Sign In
+                                <Button className="rounded-xl px-8 h-auto py-3 text-base">
+                                    Get Started
+                                    <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
                             </Link>
                         </motion.div>
