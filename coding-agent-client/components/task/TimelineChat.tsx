@@ -3,6 +3,7 @@
 import { TimelineEntry } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { useAuthStore } from "@/lib/store/userStore";
+import { formatTimelineContent } from "@/lib/utils/timelineFormat";
 
 interface TimelineChatProps {
     timeline: TimelineEntry[];
@@ -19,39 +20,10 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
         }
     };
 
-    const getReadableContent = (entry: TimelineEntry) => {
-        const { type, content } = entry;
-
-        if (entry.role === "system") {
-            switch (type) {
-                case "task_created":
-                    return content;
-                case "repo_summary_saved":
-                    return "Repository analyzed successfully";
-                case "action_set": {
-                    const text = content.replace("User set action:", "Action selected:");
-                    return text.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
-                }
-                case "plan_generated":
-                    return "Plan has been generated";
-                default:
-                    return content;
-            }
-        }
-
-        if (entry.role === "user" && type === "plan_approved") {
-            const userName = user?.name || user?.email || "User";
-            return `Plan approved by ${userName}`;
-        }
-
-        return content;
-    };
-
     const renderTimelineEntry = (entry: TimelineEntry) => {
         const { role, createdAt, _id } = entry;
-        const displayContent = getReadableContent(entry);
+        const displayContent = formatTimelineContent(entry, user);
 
-        // System messages - subtle, centered
         if (role === "system") {
             return (
                 <div key={_id} className="flex justify-center my-4">
@@ -62,7 +34,6 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
             );
         }
 
-        // User messages - right aligned, clean
         if (role === "user") {
             return (
                 <div key={_id} className="flex justify-end mb-4">
@@ -78,7 +49,6 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
             );
         }
 
-        // Agent messages - left aligned, clean
         if (role === "agent") {
             return (
                 <div key={_id} className="flex justify-start mb-4">
