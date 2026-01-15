@@ -42,9 +42,38 @@ export async function createAndCheckoutBranch(containerName: string, branchName:
     await runSandboxCommand(containerName, `cd ${repoName} && git checkout -b ${branchName}`)
 }
 
-export async function commitChange(containerName: string, message: string, repoName: string) {
+/**
+ * Check if there are uncommitted changes in the git working tree
+ * @returns true if there are changes, false if working tree is clean
+ */
+export async function checkGitStatus(containerName: string, repoName: string): Promise<boolean> {
+    const status = await runSandboxCommand(containerName, `cd ${repoName} && git status --porcelain`);
+    return status.trim().length > 0;
+}
+
+/**
+ * Commit changes to git repository
+ * @returns Object indicating whether commit was successful and a message
+ */
+export async function commitChange(containerName: string, message: string, repoName: string): Promise<{ committed: boolean, message: string }> {
+    // Check if there are any changes to commit
+    const hasChanges = await checkGitStatus(containerName, repoName);
+    
+    if (!hasChanges) {
+        return { 
+            committed: false, 
+            message: 'No changes detected in working tree' 
+        };
+    }
+    
+    // Only add and commit if there are changes
     await runSandboxCommand(containerName, `cd ${repoName} && git add .`);
     await runSandboxCommand(containerName, `cd ${repoName} && git commit -m "${message}"`);
+    
+    return { 
+        committed: true, 
+        message: 'Changes committed successfully' 
+    };
 }
 
 export async function pushBranch(containerName: string, branchName: string, repoName: string, githubToken?: string) {

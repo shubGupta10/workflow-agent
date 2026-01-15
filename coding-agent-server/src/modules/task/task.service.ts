@@ -372,9 +372,7 @@ const executeTask = async (taskId: string) => {
                         logs.push(`Writing file: ${file.path}`);
                         await applyFileChanges(containerId, file.path, file.content, repoName)
                     }
-                    // Stage all changes to git after writing files
-                    logs.push(`Staging changes to git...`);
-                    await runSandboxCommand(containerId, `cd ${repoName} && git add .`);
+                    // Note: Staging is now handled in commitChange() function
                 }
 
                 if (step.command) {
@@ -401,9 +399,35 @@ const executeTask = async (taskId: string) => {
             }
         }
 
-        logs.push("Committing changes...");
-        await commitChange(containerId, `Task ${taskId} - Applied planned changes`, repoName!);
+        logs.push("Checking for changes...");
+        const commitResult = await commitChange(containerId, `Task ${taskId} - Applied planned changes`, repoName!);
 
+        if (!commitResult.committed) {
+            // No changes detected - complete task without PR
+            logs.push("No changes detected. Task completed without creating PR.");
+            logs.push(commitResult.message);
+
+            existingTask.executionLog = {
+                status: 'COMPLETED_NO_CHANGES',
+                branchName,
+                logs,
+                message: 'Plan was executed but resulted in no code changes. This may happen if files already exist with identical content.'
+            };
+            existingTask.status = TaskStatus.COMPLETED;
+
+            existingTask.timeline.push({
+                role: TimelineEnum.AGENT,
+                type: 'task_completed_no_changes',
+                content: 'Task completed successfully but no code changes were detected',
+                createdAt: new Date()
+            });
+
+            await existingTask.save();
+            return existingTask;
+        }
+
+        // Changes were committed - proceed with push and PR
+        logs.push(commitResult.message);
         logs.push("Pushing branch to remote...");
         await pushBranch(containerId, branchName, repoName!, githubToken);
 
