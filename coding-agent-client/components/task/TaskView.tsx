@@ -436,7 +436,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                                 plan={message.content}
                                 onApprove={handleApprove}
                                 onEdit={handleEdit}
-                                disabled={isLoading}
+                                disabled={isLoading || activeSession?.status === "EXECUTING" || activeSession?.status === "COMPLETED" || activeSession?.status === "REVIEW_COMPLETE"}
                             />
                         </ChatMessage>
                     );

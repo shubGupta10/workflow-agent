@@ -206,15 +206,15 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                     {expandedSections.execution && (
                         <CardContent>
                             <div className={`rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-xs ${isFailed
-                                    ? "bg-destructive/5 border border-destructive/20"
-                                    : "bg-muted/50 border border-border"
+                                ? "bg-destructive/5 border border-destructive/20"
+                                : "bg-muted/50 border border-border"
                                 }`}>
                                 {taskDetails.executionLog.logs.map((log, index) => (
                                     <div
                                         key={index}
                                         className={`py-1 ${log.toLowerCase().includes("error")
-                                                ? "text-destructive font-semibold"
-                                                : "text-muted-foreground"
+                                            ? "text-destructive font-semibold"
+                                            : "text-muted-foreground"
                                             }`}
                                     >
                                         {log}
@@ -336,7 +336,6 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
             )}
 
             {/* Other sections as collapsible cards */}
-            {renderRepoSummary()}
             {renderPlan()}
             {renderExecutionLog()}
             {renderResult()}

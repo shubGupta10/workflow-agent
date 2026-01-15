@@ -13,16 +13,14 @@ export default function ChatPage() {
     const { isSidebarOpen, isMobile, toggleSidebar, closeSidebar } = useSidebar();
     const { setToggleSidebar } = useSidebarToggle();
 
-    // Register toggle function so Navbar can use it
     useEffect(() => {
         setToggleSidebar(toggleSidebar);
         return () => setToggleSidebar(null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
         <LayoutProvider value={{ onToggleSidebar: toggleSidebar, showHamburger: true }}>
-            <div className="flex h-full bg-background">
+            <div className="flex h-[calc(100vh-4rem)] bg-background">
                 <Sidebar
                     onDeleteTask={deleteTask}
                     isOpen={isSidebarOpen}

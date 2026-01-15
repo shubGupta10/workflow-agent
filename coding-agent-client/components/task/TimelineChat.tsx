@@ -2,12 +2,15 @@
 
 import { TimelineEntry } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
+import { useAuthStore } from "@/lib/store/userStore";
 
 interface TimelineChatProps {
     timeline: TimelineEntry[];
 }
 
 export function TimelineChat({ timeline }: TimelineChatProps) {
+    const { user } = useAuthStore();
+
     const formatTimestamp = (dateString: string) => {
         try {
             return formatDistanceToNow(new Date(dateString), { addSuffix: true });
@@ -19,22 +22,26 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
     const getReadableContent = (entry: TimelineEntry) => {
         const { type, content } = entry;
 
-        // Make system messages more readable
         if (entry.role === "system") {
             switch (type) {
                 case "task_created":
                     return content;
                 case "repo_summary_saved":
                     return "Repository analyzed successfully";
-                case "action_set":
-                    return content.replace("User set action:", "Action selected:");
+                case "action_set": {
+                    const text = content.replace("User set action:", "Action selected:");
+                    return text.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                }
                 case "plan_generated":
                     return "Plan has been generated";
-                case "plan_approved":
-                    return "Plan approved and ready for execution";
                 default:
                     return content;
             }
+        }
+
+        if (entry.role === "user" && type === "plan_approved") {
+            const userName = user?.name || user?.email || "User";
+            return `Plan approved by ${userName}`;
         }
 
         return content;

@@ -287,7 +287,7 @@ const approvePlan = async (taskId: string, approvedBy: string) => {
     existingTask.timeline.push({
         role: TimelineEnum.USER,
         type: 'plan_approved',
-        content: `Plan approved by ${approvedBy}`,
+        content: 'Plan approved',
         createdAt: new Date()
     })
 
