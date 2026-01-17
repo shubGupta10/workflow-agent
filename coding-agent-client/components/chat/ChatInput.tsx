@@ -42,7 +42,7 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
 
     return (
         <div className="bg-background p-4 md:p-6">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-3xl mx-auto">
                 <div className="flex gap-3 items-end">
                     <div className="flex-1 relative">
                         <Textarea

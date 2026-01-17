@@ -88,11 +88,11 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                     className={cn(
                         "bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out",
                         isMobile ? [
-                            "fixed inset-y-0 left-0 z-50 h-screen w-64",
+                            "fixed inset-y-0 left-0 z-50 h-screen w-60",
                             !isOpen && "-translate-x-full"
                         ] : [
                             "relative h-full",
-                            isCollapsed ? "w-16" : "w-64"
+                            isCollapsed ? "w-16" : "w-60"
                         ],
                         "md:translate-x-0 md:static md:h-full"
                     )}
@@ -135,19 +135,19 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                                     </div>
                                 )
                             ) : (
-                                <div className="space-y-2 pb-2">
+                                <div className="space-y-1.5 pb-2">
                                     {sessions.map((session) => {
                                         const taskItem = (
                                             <div
                                                 key={session.id}
                                                 onClick={() => handleSessionClick(session.id, session.taskId)}
                                                 className={cn(
-                                                    "w-full text-left rounded-lg transition-colors cursor-pointer",
-                                                    "hover:bg-sidebar-accent",
+                                                    "w-full text-left rounded-lg transition-all duration-200 cursor-pointer border-l-2",
+                                                    "hover:bg-sidebar-accent/70",
                                                     activeSessionId === session.id
-                                                        ? "bg-sidebar-accent border-l-2 border-sidebar-primary"
-                                                        : "bg-transparent",
-                                                    isCollapsed ? "p-2 flex justify-center" : "p-3"
+                                                        ? "bg-sidebar-accent border-sidebar-primary shadow-sm"
+                                                        : "bg-transparent border-transparent hover:border-sidebar-border",
+                                                    isCollapsed ? "p-2 flex justify-center" : "p-2.5"
                                                 )}
                                             >
                                                 {isCollapsed ? (
@@ -155,7 +155,12 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                                                 ) : (
                                                     <>
                                                         <div className="flex items-start justify-between gap-2">
-                                                            <span className="text-sm font-medium text-sidebar-foreground truncate flex-1">
+                                                            <span className={cn(
+                                                                "text-sm truncate flex-1",
+                                                                activeSessionId === session.id
+                                                                    ? "font-semibold text-sidebar-foreground"
+                                                                    : "font-medium text-sidebar-foreground/80"
+                                                            )}>
                                                                 {session.title}
                                                             </span>
                                                             {session.taskId && onDeleteTask && (
@@ -168,7 +173,7 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
                                                                 </button>
                                                             )}
                                                         </div>
-                                                        <div className="mt-2">
+                                                        <div className="mt-1.5">
                                                             <span
                                                                 className={cn(
                                                                     "inline-block text-xs px-2 py-0.5 rounded-full",

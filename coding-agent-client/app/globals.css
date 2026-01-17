@@ -100,8 +100,8 @@
   --chart-5: #66493e;
   --sidebar: #fbfbfb;
   --sidebar-foreground: #252525;
-  --sidebar-primary: #343434;
-  --sidebar-primary-foreground: #fbfbfb;
+  --sidebar-primary: #644a40;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f7f7f7;
   --sidebar-accent-foreground: #343434;
   --sidebar-border: #ebebeb;
@@ -155,8 +155,8 @@
   --chart-5: #ffe0c1;
   --sidebar: #18181b;
   --sidebar-foreground: #f4f4f5;
-  --sidebar-primary: #1d4ed8;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #ffe0c2;
+  --sidebar-primary-foreground: #081a1b;
   --sidebar-accent: #27272a;
   --sidebar-accent-foreground: #f4f4f5;
   --sidebar-border: #27272a;

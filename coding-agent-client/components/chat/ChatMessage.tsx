@@ -15,16 +15,16 @@ export function ChatMessage({ message, children }: ChatMessageProps) {
     return (
         <div
             className={cn(
-                "flex w-full mb-4",
+                "flex w-full",
                 isUser ? "justify-end" : "justify-start"
             )}
         >
             <div
                 className={cn(
-                    "max-w-[85%] rounded-2xl px-5 py-3.5 transition-all duration-200",
+                    "max-w-[85%] rounded-lg p-4 transition-all duration-200 border-l-4",
                     isUser
-                        ? "bg-primary text-primary-foreground rounded-br-md shadow-md hover:shadow-lg"
-                        : "bg-card text-card-foreground border border-border rounded-bl-md shadow-sm hover:shadow-md"
+                        ? "bg-accent border-accent-foreground/20 text-accent-foreground ml-auto mr-0 shadow-sm hover:shadow-md"
+                        : "bg-muted border-muted-foreground/20 text-foreground ml-0 mr-auto shadow-sm hover:shadow"
                 )}
             >
                 {isLoading ? (
