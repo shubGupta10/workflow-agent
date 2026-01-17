@@ -1,10 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import mongooseFieldEncryption from 'mongoose-field-encryption';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   githubId?: string;
-  githubAccessToken?: string; 
+  githubAccessToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,12 +28,19 @@ const userSchema = new Schema<IUser>(
     },
     githubAccessToken: {
       type: String,
-      select: false, 
+      select: false,
     },
   },
   {
     timestamps: true,
   }
 );
+
+// Encrypt sensitive fields
+userSchema.plugin(mongooseFieldEncryption.fieldEncryption, {
+  fields: ['githubAccessToken'],
+  secret: process.env.ENCRYPTION_KEY || '', // 32-byte hex key
+  saltGenerator: () => process.env.ENCRYPTION_SALT || 'default-salt',
+});
 
 export const User = mongoose.model<IUser>('User', userSchema);
