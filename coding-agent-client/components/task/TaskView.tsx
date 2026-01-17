@@ -24,6 +24,7 @@ import {
     approvePlanAction,
     executeTaskAction,
 } from "@/app/actions";
+import { generatePlanStream } from "@/lib/api";
 
 interface TaskViewProps {
     onToggleSidebar?: () => void;
@@ -259,58 +260,138 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
             removeLastMessage(activeSession.id);
             addMessage(activeSession.id, { type: "loading", content: "Generating plan…" });
 
-            // STEP 3: Generate plan immediately after setTask
-            const planResult = await generatePlanAction(taskId);
-            removeLastMessage(activeSession.id);
+            // STEP 3: Generate plan with STREAMING
+            try {
+                // We use the direct client API for streaming, bypassing server actions to get the readable stream
+                const response = await generatePlanStream(taskId);
+                const contentType = response.headers.get("Content-Type") || "";
 
-            if (planResult.success && planResult.data) {
-                let content: string;
+                if (contentType.includes("application/json")) {
+                    // Handle standard JSON response (not streaming)
+                    const data = await response.json();
 
-                // Extract text from LLM response structure
-                if (typeof planResult.data === 'string') {
-                    content = planResult.data;
-                } else if (planResult.data.data?.text) {
-                    // Server returns { message, data: { text, usage } }
-                    content = planResult.data.data.text;
-                } else if (planResult.data.text) {
-                    content = planResult.data.text;
-                } else if (planResult.data.data) {
-                    content = typeof planResult.data.data === 'string' ? planResult.data.data : JSON.stringify(planResult.data.data);
-                } else if (planResult.data.plan) {
-                    content = planResult.data.plan;
-                } else if (planResult.data.result) {
-                    content = planResult.data.result;
-                } else {
-                    content = JSON.stringify(planResult.data, null, 2);
-                }
+                    let content = "";
+                    if (data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+                        if (data.data.text) {
+                            content = data.data.text;
+                            if (data.data.usage) {
+                                console.log("[TaskView] LLM Usage:", data.data.usage);
+                            }
+                        } else {
+                            content = JSON.stringify(data.data, null, 2);
+                        }
+                    } else if (typeof data.data === 'string') {
+                        content = data.data;
+                    } else {
+                        content = JSON.stringify(data.data || data, null, 2);
+                    }
 
-                setCurrentPlan(content);
+                    setCurrentPlan(content);
+                    removeLastMessage(activeSession.id);
 
-                const currentAction = action || activeSession.selectedAction;
+                    const currentAction = action || activeSession.selectedAction;
+                    const messageType = currentAction === "REVIEW_PR" ? "review" : "plan-display";
 
-                if (currentAction === "REVIEW_PR") {
-                    updateSessionStatus(activeSession.id, "REVIEW_COMPLETE");
                     addMessage(activeSession.id, {
                         type: "system",
                         content: content,
-                        systemType: "review"
+                        systemType: messageType
                     });
+
+                    if (currentAction === "REVIEW_PR") {
+                        updateSessionStatus(activeSession.id, "REVIEW_COMPLETE");
+                    } else {
+                        updateSessionStatus(activeSession.id, "AWAITING_APPROVAL");
+                    }
+
                 } else {
-                    // EXECUTION ACTIONS (FIX_ISSUE / PLAN_CHANGE): Require approval
-                    updateSessionStatus(activeSession.id, "AWAITING_APPROVAL");
+                    // Handle Streaming Response (NDJSON or text/plain)
+                    const reader = response.body?.getReader();
+
+                    if (!reader) {
+                        throw new Error("Failed to get response reader");
+                    }
+
+                    removeLastMessage(activeSession.id);
+
+                    let accumulatedPlan = "";
+                    setCurrentPlan("");
+
+                    const currentAction = action || activeSession.selectedAction;
+                    const messageType = currentAction === "REVIEW_PR" ? "review" : "plan-display";
+
+                    // Add initial empty message
                     addMessage(activeSession.id, {
                         type: "system",
-                        content: content,
-                        systemType: "plan-display"
+                        content: "",
+                        systemType: messageType
                     });
+
+                    const decoder = new TextDecoder();
+                    let buffer = "";
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        buffer += chunk;
+
+                        // Process complete lines from buffer
+                        const lines = buffer.split("\n");
+                        buffer = lines.pop() || ""; // Keep the last partial line
+
+                        for (const line of lines) {
+                            if (!line.trim()) continue;
+
+                            try {
+                                const data = JSON.parse(line);
+
+                                if (data.type === "chunk") {
+                                    accumulatedPlan += data.content;
+                                    setCurrentPlan(accumulatedPlan);
+
+                                    // Update UI
+                                    removeLastMessage(activeSession.id);
+                                    addMessage(activeSession.id, {
+                                        type: "system",
+                                        content: accumulatedPlan,
+                                        systemType: messageType
+                                    });
+                                } else if (data.type === "usage") {
+                                    console.log("[TaskView] LLM Usage:", data.data);
+                                }
+                            } catch (e) {
+                                console.warn("NDJSON parse error, treating as raw text:", e);
+                                // Fallback: if it's not JSON, append raw line (for robustness)
+                                accumulatedPlan += line + "\n";
+                                setCurrentPlan(accumulatedPlan);
+                                removeLastMessage(activeSession.id);
+                                addMessage(activeSession.id, {
+                                    type: "system",
+                                    content: accumulatedPlan,
+                                    systemType: messageType
+                                });
+                            }
+                        }
+                    }
+
+                    if (currentAction === "REVIEW_PR") {
+                        updateSessionStatus(activeSession.id, "REVIEW_COMPLETE");
+                    } else {
+                        updateSessionStatus(activeSession.id, "AWAITING_APPROVAL");
+                    }
                 }
-            } else {
+
+            } catch (error) {
+                console.error("Streaming error:", error);
                 addMessage(activeSession.id, {
                     type: "system",
-                    content: planResult.error || "Failed to generate plan",
+                    content: error instanceof Error ? error.message : "Failed to generate plan",
                     systemType: "error"
                 });
             }
+
             setIsLoading(false);
         }
     };

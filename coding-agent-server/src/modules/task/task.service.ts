@@ -4,7 +4,8 @@ import redis, { PR_REVIEW_CACHE_TTL } from '../../lib/redis';
 import { getPrReviewCacheKey } from '../../lib/redis/redisFunctions';
 import { runSandboxCommand, startSandbox, stopSandbox } from '../../lib/sandbox/sandBoxUtils';
 import { buildPlanningPrompt, buildReviewPrompt } from '../../llm/llm.prompt';
-import { generatePlanLLM, reviewPullRequest } from '../../llm/llm.service';
+import { generatePlanLLM, generatePlanLLMStream, reviewPullRequest } from '../../llm/llm.service';
+import { LLMUsage } from '../../llm/llm.types';
 import { User } from '../user/user.model';
 import { TimelineEnum } from './task.enum';
 import { Task, TaskAction } from './task.model';
@@ -103,7 +104,7 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
     return updatedTask;
 }
 
-const generatePlan = async (taskId: string) => {
+const generatePlan = async function* (taskId: string) {
 
     // fetch Task by taskId
     if (!taskId) {
@@ -128,7 +129,9 @@ const generatePlan = async (taskId: string) => {
     //  build planning prompt
     let prompt;
     let nextStatus = TaskStatus.AWAITING_APPROVAL;
-    let llmResponse;
+    let fullText = "";
+    let usage: LLMUsage | undefined;
+    let model = "";
 
 
     if (existingTask.action === TaskAction.REVIEW_PR) {
@@ -169,7 +172,13 @@ const generatePlan = async (taskId: string) => {
             userInput: typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput)
         });
 
-        llmResponse = await reviewPullRequest(prompt);
+        const llmResponse = await reviewPullRequest(prompt);
+        fullText = llmResponse.text;
+        yield fullText;
+
+        usage = llmResponse.usage;
+        model = llmResponse.model;
+
         if (!llmResponse) {
             throw new Error("Failed to generate PR review");
         }
@@ -195,25 +204,32 @@ const generatePlan = async (taskId: string) => {
                 : undefined
         });
 
-        llmResponse = await generatePlanLLM(prompt);
+        const stream = generatePlanLLMStream(prompt);
 
-        if (!llmResponse) {
-            throw new Error("Failed to generate plan from LLM");
+        const iterator = stream[Symbol.asyncIterator]();
+        let result = await iterator.next();
+
+        while (!result.done) {
+            const chunk = result.value;
+            fullText += chunk;
+            yield chunk;
+            result = await iterator.next();
         }
+
+        usage = result.value as LLMUsage;
+        model = "gemini-1.5-flash";
 
         nextStatus = TaskStatus.AWAITING_APPROVAL;
     }
 
     //store llm usage
-    const usage = llmResponse.usage;
-
     const llmUsagePayload = usage
         ? {
             purpose:
                 existingTask.action === TaskAction.REVIEW_PR
                     ? "PR_REVIEW"
                     : "PLAN_GENERATION",
-            model: llmResponse.model,
+            model: model || "unknown",
             inputTokens: usage.inputTokens,
             outputTokens: usage.outputTokens,
             totalTokens: usage.totalTokens,
@@ -225,8 +241,8 @@ const generatePlan = async (taskId: string) => {
     await Task.findByIdAndUpdate(
         taskId,
         {
-            plan: existingTask.action === TaskAction.REVIEW_PR ? undefined : llmResponse.text,
-            result: existingTask.action === TaskAction.REVIEW_PR ? { review: llmResponse.text } : undefined,
+            plan: existingTask.action === TaskAction.REVIEW_PR ? undefined : fullText,
+            result: existingTask.action === TaskAction.REVIEW_PR ? { review: fullText } : undefined,
             status: nextStatus,
             llmUsage: llmUsagePayload,
             executionLog:
@@ -252,7 +268,7 @@ const generatePlan = async (taskId: string) => {
         }
     )
 
-    return llmResponse;
+    return fullText;
 }
 
 const approvePlan = async (taskId: string, approvedBy: string) => {

@@ -1,4 +1,4 @@
-import { executeLLM } from "./llm.executor";
+import { executeLLM, executeLLMStream } from "./llm.executor";
 import { LLMResult } from "./llm.types";
 
 export function understandRepo(prompt: string): Promise<LLMResult> {
@@ -10,6 +10,13 @@ export function understandRepo(prompt: string): Promise<LLMResult> {
 
 export function generatePlanLLM(prompt: string): Promise<LLMResult> {
     return executeLLM({
+        prompt,
+        useCase: "PLAN_GENERATION",
+    });
+}
+
+export function generatePlanLLMStream(prompt: string) {
+    return executeLLMStream({
         prompt,
         useCase: "PLAN_GENERATION",
     });

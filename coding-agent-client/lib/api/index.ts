@@ -72,6 +72,26 @@ export const setTask = async (taskId: string, action: string, userInput: string)
     return data;
 };
 
+export const generatePlanStream = async (taskId: string) => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const url = `${appURl}/api/v1/tasks/generate-plan/${taskId}`;
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] generatePlanStream error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    return response;
+};
+
 export const generatePlan = async (taskId: string) => {
     if (!appURl) {
         throw new Error('BACKEND_URL environment variable is not set');

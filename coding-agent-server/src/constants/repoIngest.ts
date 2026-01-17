@@ -3,16 +3,6 @@ import { promisify } from 'util';
 
 export const execAsync = promisify(exec);
 
-interface RepoSummary {
-    taskId: string;
-    repoUrl: string;
-    languages: string[];
-    framework: string | null;
-    configFiles: string[];
-    packageManager: string;
-    folderStructure: string[];
-    entryPoints: string[];
-}
 
 // Script injected into the container to analyze the filesystem
 export const INTERNAL_ANALYSIS_SCRIPT = `

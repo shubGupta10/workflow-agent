@@ -1,5 +1,5 @@
 import genAI from "./llm.client";
-import { LLMResult } from "./llm.types";
+import { LLMResult, LLMUsage } from "./llm.types";
 import { LLM_POLICY, LLMUseCase } from "./llm.policy";
 import crypto from "crypto";
 import redis, { CACHE_TTL_SECONDS } from "../lib/redis";
@@ -77,6 +77,56 @@ export async function executeLLM({
         }
 
         return LLMResult;
+    } catch (error) {
+        console.error("LLM execution failed", error);
+        throw new Error("LLM execution failed");
+    }
+}
+
+export async function* executeLLMStream({
+    prompt,
+    useCase,
+}: ExecuteLLMINput): AsyncGenerator<string, LLMUsage, unknown> {
+    const policy = LLM_POLICY[useCase];
+
+    if (!policy) {
+        throw new Error(`No LLM policy defined for use case: ${useCase}`);
+    }
+
+    if (policy.maxInputTokens) {
+        const estimatedTokens = Math.ceil(prompt.length / 4);
+        if (estimatedTokens > policy.maxInputTokens) {
+            throw new Error(
+                `Prompt too large for ${useCase}: ~${estimatedTokens} tokens exceeds the safety limit of ${policy.maxInputTokens}.`
+            );
+        }
+    }
+
+    try {
+        const llmModel = genAI.getGenerativeModel({
+            model: policy.model,
+            generationConfig: {
+                maxOutputTokens: policy.maxOutputTokens,
+                temperature: policy.temperature,
+            }
+        })
+
+        const result = await llmModel.generateContentStream(prompt);
+
+        for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            yield chunkText;
+        }
+
+        const response = await result.response;
+
+        const usage: LLMUsage = response.usageMetadata ? {
+            inputTokens: response.usageMetadata.promptTokenCount,
+            outputTokens: response.usageMetadata.candidatesTokenCount,
+            totalTokens: response.usageMetadata.totalTokenCount,
+        } : {};
+
+        return usage;
     } catch (error) {
         console.error("LLM execution failed", error);
         throw new Error("LLM execution failed");
