@@ -493,15 +493,32 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
 
                             {activeSession.messages.length === 0 && !activeSession.taskId ? (
                                 <div className="flex flex-col items-center justify-center min-h-[500px] text-center px-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                                        <Sparkles className="w-8 h-8 text-primary" />
+                                    <div className="relative mb-8">
+                                        <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-xl"></div>
+                                        <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
+                                            <Sparkles className="w-10 h-10 text-primary" />
+                                        </div>
                                     </div>
-                                    <h2 className="text-xl font-semibold text-foreground mb-3">
+                                    <h2 className="text-2xl font-bold text-foreground mb-3">
                                         Start a New Task
                                     </h2>
-                                    <p className="text-muted-foreground max-w-md leading-relaxed">
-                                        Paste a GitHub repository URL below to get started. I can help you review PRs, fix issues, or plan changes.
+                                    <p className="text-base text-muted-foreground max-w-md leading-relaxed mb-6">
+                                        Paste a GitHub repository URL below to get started.
                                     </p>
+                                    <div className="flex flex-col gap-3 text-sm text-muted-foreground max-w-sm">
+                                        <div className="flex items-center gap-3 bg-muted/30 rounded-lg px-4 py-3 border border-border/50">
+                                            <div className="w-2 h-2 rounded-full bg-primary shrink-0"></div>
+                                            <span className="text-left">Review pull requests with AI-powered insights</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-muted/30 rounded-lg px-4 py-3 border border-border/50">
+                                            <div className="w-2 h-2 rounded-full bg-primary shrink-0"></div>
+                                            <span className="text-left">Fix issues and suggest improvements</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 bg-muted/30 rounded-lg px-4 py-3 border border-border/50">
+                                            <div className="w-2 h-2 rounded-full bg-primary shrink-0"></div>
+                                            <span className="text-left">Plan changes and generate implementation guides</span>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <>
