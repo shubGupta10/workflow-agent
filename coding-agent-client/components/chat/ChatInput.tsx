@@ -41,8 +41,8 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
     };
 
     return (
-        <div className="bg-background p-4">
-            <div className="max-w-3xl mx-auto">
+        <div className="bg-background p-4 md:p-6">
+            <div className="max-w-4xl mx-auto">
                 <div className="flex gap-3 items-end">
                     <div className="flex-1 relative">
                         <Textarea
@@ -54,8 +54,8 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
                             disabled={disabled}
                             rows={1}
                             className={cn(
-                                "resize-none min-h-[44px] max-h-[200px]",
-                                "bg-input border-border",
+                                "resize-none min-h-[48px] max-h-[200px]",
+                                "bg-input border-border focus:ring-2 focus:ring-ring",
                                 disabled && "opacity-50 cursor-not-allowed"
                             )}
                         />
@@ -64,7 +64,7 @@ export function ChatInput({ placeholder = "Type a message...", onSubmit, disable
                         onClick={handleSubmit}
                         disabled={disabled || !value.trim()}
                         size="icon"
-                        className="h-11 w-11 shrink-0"
+                        className="h-12 w-12 shrink-0 shadow-md hover:shadow-lg transition-shadow"
                     >
                         <Send className="w-5 h-5" />
                     </Button>

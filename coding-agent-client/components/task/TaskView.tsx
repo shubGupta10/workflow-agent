@@ -481,8 +481,8 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto">
                 <ScrollArea className="h-full">
-                    <div className="px-4 py-6">
-                        <div className="space-y-4">
+                    <div className="max-w-4xl mx-auto px-4 py-8">
+                        <div className="space-y-6">
                             {/* Show task history for any task with details */}
                             {activeSession.taskId && !taskDetailsLoading && (() => {
                                 const taskDetails = getCachedTaskDetails(activeSession.taskId);
