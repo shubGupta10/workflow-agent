@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionType, ACTION_LABELS } from "@/lib/types";
-import ReactMarkdown, { Components } from "react-markdown";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Clipboard, Wrench, ClipboardList, Check, CheckCircle, ExternalLink, X, Sparkles } from "lucide-react";
 
 interface ActionSelectionCardProps {
@@ -88,30 +89,6 @@ interface ReviewDisplayCardProps {
 }
 
 export function ReviewDisplayCard({ review }: ReviewDisplayCardProps) {
-    const components: Components = {
-        h2: ({ children }) => (
-            <h2 className="text-lg font-semibold text-foreground mt-6 first:mt-0 mb-4">{children}</h2>
-        ),
-        h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-foreground mt-4 mb-3">{children}</h3>
-        ),
-        p: ({ children }) => (
-            <p className="text-sm text-foreground leading-relaxed mb-4">{children}</p>
-        ),
-        ul: ({ children }) => (
-            <ul className="space-y-2 mb-4">{children}</ul>
-        ),
-        li: ({ children }) => (
-            <li className="flex gap-3 text-sm leading-relaxed">
-                <span className="text-primary mt-1.5 shrink-0">•</span>
-                <span className="text-muted-foreground flex-1">{children}</span>
-            </li>
-        ),
-        strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
-        ),
-    };
-
     return (
         <Card className="w-full">
             <CardHeader className="pb-4 border-b border-border">
@@ -121,13 +98,33 @@ export function ReviewDisplayCard({ review }: ReviewDisplayCardProps) {
                     </div>
                     <div className="flex-1">
                         <CardTitle className="text-lg font-semibold">Pull Request Review</CardTitle>
-                        <CardDescription className="mt-1">Here's my analysis of the changes</CardDescription>
+                        <CardDescription className="mt-1">AI-powered code analysis and recommendations</CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="pt-6">
-                <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-muted-foreground prose-strong:text-foreground prose-li:text-muted-foreground">
-                    <ReactMarkdown components={components}>
+                <div className="prose prose-sm dark:prose-invert max-w-none
+                    prose-headings:text-foreground prose-headings:font-semibold
+                    prose-h1:text-2xl prose-h1:mt-8 prose-h1:mb-4 prose-h1:pb-2 prose-h1:border-b prose-h1:border-border
+                    prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-3
+                    prose-h3:text-lg prose-h3:mt-5 prose-h3:mb-2.5
+                    prose-h4:text-base prose-h4:mt-4 prose-h4:mb-2
+                    prose-p:text-foreground prose-p:leading-relaxed prose-p:mb-4
+                    prose-strong:text-foreground prose-strong:font-semibold
+                    prose-em:text-foreground
+                    prose-ul:my-4 prose-ul:ml-4
+                    prose-ol:my-4 prose-ol:ml-4
+                    prose-li:text-foreground prose-li:my-1
+                    prose-code:text-foreground prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:border prose-code:border-border prose-code:before:content-none prose-code:after:content-none
+                    prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg
+                    prose-blockquote:border-l-4 prose-blockquote:border-primary/30 prose-blockquote:pl-4 prose-blockquote:bg-muted/30 prose-blockquote:rounded-r prose-blockquote:text-muted-foreground
+                    prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                    prose-hr:border-border prose-hr:my-6
+                    prose-table:border-collapse prose-table:w-full
+                    prose-th:border prose-th:border-border prose-th:bg-muted prose-th:p-2 prose-th:text-left
+                    prose-td:border prose-td:border-border prose-td:p-2
+                ">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
                         {review}
                     </ReactMarkdown>
                 </div>
@@ -201,4 +198,3 @@ export function ErrorCard({ error, onRetry }: ErrorCardProps) {
         </Card>
     );
 }
-

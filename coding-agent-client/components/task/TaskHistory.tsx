@@ -2,9 +2,12 @@
 
 import { TaskDetails } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp, Maximize2 } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { TimelineChat } from "./TimelineChat";
 
 interface TaskHistoryProps {
@@ -138,34 +141,159 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                         {!taskDetails.plan ? (
                             <p className="text-sm text-muted-foreground italic">Plan not available</p>
                         ) : (
-                            <div className="bg-muted/50 rounded-lg p-4 max-h-96 overflow-y-auto prose prose-sm max-w-none border border-border">
-                                <ReactMarkdown
-                                    components={{
-                                        h2: ({ children }: any) => (
-                                            <h2 className="text-base font-semibold mt-4 mb-2">{children}</h2>
-                                        ),
-                                        h3: ({ children }: any) => (
-                                            <h3 className="text-sm font-semibold mt-3 mb-1">{children}</h3>
-                                        ),
-                                        p: ({ children }: any) => (
-                                            <p className="text-sm text-muted-foreground mb-2">{children}</p>
-                                        ),
-                                        ul: ({ children }: any) => (
-                                            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                                                {children}
-                                            </ul>
-                                        ),
-                                        li: ({ children }: any) => (
-                                            <li className="text-sm text-muted-foreground">{children}</li>
-                                        ),
-                                        strong: ({ children }: any) => (
-                                            <strong className="font-semibold text-foreground">{children}</strong>
-                                        ),
-                                    }}
-                                >
-                                    {taskDetails.plan}
-                                </ReactMarkdown>
-                            </div>
+                            <>
+                                <div className="flex items-center justify-end mb-3">
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="outline" size="sm" className="gap-2">
+                                                <Maximize2 className="w-3.5 h-3.5" />
+                                                View Full Plan
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
+                                            <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
+                                                <DialogTitle className="text-xl font-semibold">
+                                                    {taskDetails.action === "REVIEW_PR" ? "Review Plan" : "Implementation Plan"}
+                                                </DialogTitle>
+                                                <DialogDescription className="text-sm mt-2">
+                                                    Detailed plan for this task
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="flex-1 overflow-y-auto px-6 py-6">
+                                                <ReactMarkdown
+                                                    remarkPlugins={[remarkGfm]}
+                                                    components={{
+                                                        h1: ({ children }) => (
+                                                            <h1 className="text-2xl font-bold text-foreground mt-8 mb-4 pb-3 border-b border-border first:mt-0">
+                                                                {children}
+                                                            </h1>
+                                                        ),
+                                                        h2: ({ children }) => (
+                                                            <h2 className="text-xl font-semibold text-foreground mt-6 mb-3">
+                                                                {children}
+                                                            </h2>
+                                                        ),
+                                                        h3: ({ children }) => (
+                                                            <h3 className="text-lg font-semibold text-foreground mt-5 mb-2">
+                                                                {children}
+                                                            </h3>
+                                                        ),
+                                                        h4: ({ children }) => (
+                                                            <h4 className="text-base font-semibold text-foreground mt-4 mb-2">
+                                                                {children}
+                                                            </h4>
+                                                        ),
+                                                        p: ({ children }) => (
+                                                            <p className="text-foreground leading-relaxed mb-4">
+                                                                {children}
+                                                            </p>
+                                                        ),
+                                                        ul: ({ children }) => (
+                                                            <ul className="space-y-2 my-4 ml-6 list-disc">
+                                                                {children}
+                                                            </ul>
+                                                        ),
+                                                        ol: ({ children }) => (
+                                                            <ol className="space-y-2 my-4 ml-6 list-decimal">
+                                                                {children}
+                                                            </ol>
+                                                        ),
+                                                        li: ({ children }) => (
+                                                            <li className="text-foreground leading-relaxed pl-1">
+                                                                {children}
+                                                            </li>
+                                                        ),
+                                                        strong: ({ children }) => (
+                                                            <strong className="font-semibold text-foreground">
+                                                                {children}
+                                                            </strong>
+                                                        ),
+                                                        em: ({ children }) => (
+                                                            <em className="italic text-foreground">
+                                                                {children}
+                                                            </em>
+                                                        ),
+                                                        code: ({ children, className }) => {
+                                                            const isInline = !className;
+                                                            if (isInline) {
+                                                                return (
+                                                                    <code className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-sm border border-border">
+                                                                        {children}
+                                                                    </code>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <code className="font-mono text-sm text-foreground">
+                                                                    {children}
+                                                                </code>
+                                                            );
+                                                        },
+                                                        pre: ({ children }) => (
+                                                            <pre className="bg-muted border border-border rounded-lg p-4 my-4 overflow-x-auto">
+                                                                {children}
+                                                            </pre>
+                                                        ),
+                                                        blockquote: ({ children }) => (
+                                                            <blockquote className="border-l-4 border-primary/30 pl-4 py-2 my-4 bg-muted/30 rounded-r italic text-muted-foreground">
+                                                                {children}
+                                                            </blockquote>
+                                                        ),
+                                                        a: ({ children, href }) => (
+                                                            <a
+                                                                href={href}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-primary hover:underline font-medium"
+                                                            >
+                                                                {children}
+                                                            </a>
+                                                        ),
+                                                        hr: () => (
+                                                            <hr className="my-6 border-border" />
+                                                        ),
+                                                        table: ({ children }) => (
+                                                            <div className="my-4 overflow-x-auto">
+                                                                <table className="w-full border-collapse">
+                                                                    {children}
+                                                                </table>
+                                                            </div>
+                                                        ),
+                                                        th: ({ children }) => (
+                                                            <th className="border border-border bg-muted p-3 text-left font-semibold">
+                                                                {children}
+                                                            </th>
+                                                        ),
+                                                        td: ({ children }) => (
+                                                            <td className="border border-border p-3">
+                                                                {children}
+                                                            </td>
+                                                        ),
+                                                    }}
+                                                >
+                                                    {taskDetails.plan}
+                                                </ReactMarkdown>
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                <div className="bg-muted/50 rounded-lg p-4 max-h-48 overflow-y-auto border border-border">
+                                    <div className="prose prose-sm dark:prose-invert max-w-none
+                                        prose-headings:text-foreground prose-headings:font-semibold
+                                        prose-h2:text-base prose-h2:mt-3 prose-h2:mb-2
+                                        prose-h3:text-sm prose-h3:mt-2 prose-h3:mb-1
+                                        prose-p:text-muted-foreground prose-p:text-sm prose-p:mb-2
+                                        prose-strong:text-foreground prose-strong:font-semibold
+                                        prose-ul:text-sm prose-ul:my-2
+                                        prose-ol:text-sm prose-ol:my-2
+                                        prose-li:text-muted-foreground prose-li:my-0.5
+                                        prose-code:text-foreground prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
+                                    ">
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {taskDetails.plan}
+                                        </ReactMarkdown>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </CardContent>
                 )}
@@ -311,11 +439,156 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                             )}
                             {taskDetails.result?.review && (
                                 <div>
-                                    <p className="text-sm font-medium text-foreground mb-2">Review</p>
-                                    <div className="bg-muted rounded-lg p-3 max-h-48 overflow-y-auto">
-                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                            {taskDetails.result.review}
-                                        </p>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-sm font-medium text-foreground">Review</p>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" size="sm" className="gap-2">
+                                                    <Maximize2 className="w-3.5 h-3.5" />
+                                                    View Full Review
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
+                                                <DialogHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
+                                                    <DialogTitle className="text-xl font-semibold">Pull Request Review</DialogTitle>
+                                                    <DialogDescription className="text-sm mt-2">
+                                                        AI-powered code analysis and recommendations
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="flex-1 overflow-y-auto px-6 py-6">
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            h1: ({ children }) => (
+                                                                <h1 className="text-2xl font-bold text-foreground mt-8 mb-4 pb-3 border-b border-border first:mt-0">
+                                                                    {children}
+                                                                </h1>
+                                                            ),
+                                                            h2: ({ children }) => (
+                                                                <h2 className="text-xl font-semibold text-foreground mt-6 mb-3">
+                                                                    {children}
+                                                                </h2>
+                                                            ),
+                                                            h3: ({ children }) => (
+                                                                <h3 className="text-lg font-semibold text-foreground mt-5 mb-2">
+                                                                    {children}
+                                                                </h3>
+                                                            ),
+                                                            h4: ({ children }) => (
+                                                                <h4 className="text-base font-semibold text-foreground mt-4 mb-2">
+                                                                    {children}
+                                                                </h4>
+                                                            ),
+                                                            p: ({ children }) => (
+                                                                <p className="text-foreground leading-relaxed mb-4">
+                                                                    {children}
+                                                                </p>
+                                                            ),
+                                                            ul: ({ children }) => (
+                                                                <ul className="space-y-2 my-4 ml-6 list-disc">
+                                                                    {children}
+                                                                </ul>
+                                                            ),
+                                                            ol: ({ children }) => (
+                                                                <ol className="space-y-2 my-4 ml-6 list-decimal">
+                                                                    {children}
+                                                                </ol>
+                                                            ),
+                                                            li: ({ children }) => (
+                                                                <li className="text-foreground leading-relaxed pl-1">
+                                                                    {children}
+                                                                </li>
+                                                            ),
+                                                            strong: ({ children }) => (
+                                                                <strong className="font-semibold text-foreground">
+                                                                    {children}
+                                                                </strong>
+                                                            ),
+                                                            em: ({ children }) => (
+                                                                <em className="italic text-foreground">
+                                                                    {children}
+                                                                </em>
+                                                            ),
+                                                            code: ({ children, className }) => {
+                                                                const isInline = !className;
+                                                                if (isInline) {
+                                                                    return (
+                                                                        <code className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono text-sm border border-border">
+                                                                            {children}
+                                                                        </code>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <code className="font-mono text-sm text-foreground">
+                                                                        {children}
+                                                                    </code>
+                                                                );
+                                                            },
+                                                            pre: ({ children }) => (
+                                                                <pre className="bg-muted border border-border rounded-lg p-4 my-4 overflow-x-auto">
+                                                                    {children}
+                                                                </pre>
+                                                            ),
+                                                            blockquote: ({ children }) => (
+                                                                <blockquote className="border-l-4 border-primary/30 pl-4 py-2 my-4 bg-muted/30 rounded-r italic text-muted-foreground">
+                                                                    {children}
+                                                                </blockquote>
+                                                            ),
+                                                            a: ({ children, href }) => (
+                                                                <a
+                                                                    href={href}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-primary hover:underline font-medium"
+                                                                >
+                                                                    {children}
+                                                                </a>
+                                                            ),
+                                                            hr: () => (
+                                                                <hr className="my-6 border-border" />
+                                                            ),
+                                                            table: ({ children }) => (
+                                                                <div className="my-4 overflow-x-auto">
+                                                                    <table className="w-full border-collapse">
+                                                                        {children}
+                                                                    </table>
+                                                                </div>
+                                                            ),
+                                                            th: ({ children }) => (
+                                                                <th className="border border-border bg-muted p-3 text-left font-semibold">
+                                                                    {children}
+                                                                </th>
+                                                            ),
+                                                            td: ({ children }) => (
+                                                                <td className="border border-border p-3">
+                                                                    {children}
+                                                                </td>
+                                                            ),
+                                                        }}
+                                                    >
+                                                        {taskDetails.result.review}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </div>
+                                    <div className="bg-muted/50 rounded-lg p-4 max-h-48 overflow-y-auto border border-border">
+                                        <div className="prose prose-sm dark:prose-invert max-w-none
+                                            prose-headings:text-foreground prose-headings:font-semibold
+                                            prose-h1:text-lg prose-h1:mt-4 prose-h1:mb-2
+                                            prose-h2:text-base prose-h2:mt-3 prose-h2:mb-2
+                                            prose-h3:text-sm prose-h3:mt-2 prose-h3:mb-1
+                                            prose-p:text-muted-foreground prose-p:text-sm prose-p:mb-2
+                                            prose-strong:text-foreground prose-strong:font-semibold
+                                            prose-ul:text-sm prose-ul:my-2
+                                            prose-ol:text-sm prose-ol:my-2
+                                            prose-li:text-muted-foreground prose-li:my-0.5
+                                            prose-code:text-foreground prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
+                                        ">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {taskDetails.result.review}
+                                            </ReactMarkdown>
+                                        </div>
                                     </div>
                                 </div>
                             )}
