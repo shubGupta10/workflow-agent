@@ -26,7 +26,7 @@ export const handleGithubCallback = async (code: string): Promise<string> => {
   });
 
   const { data: githubUser } = await octokit.rest.users.getAuthenticated();
-  const { data: emails } = await octokit.rest.users.listEmailsForAuthenticated();
+  const { data: emails } = await octokit.rest.users.listEmailsForAuthenticatedUser();
 
   const primaryEmail = emails.find(
     (e) => e.primary && e.verified

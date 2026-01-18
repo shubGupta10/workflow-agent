@@ -36,11 +36,10 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// Encrypt sensitive fields
 userSchema.plugin(mongooseFieldEncryption.fieldEncryption, {
   fields: ['githubAccessToken'],
-  secret: process.env.ENCRYPTION_KEY || '', // 32-byte hex key
-  saltGenerator: () => process.env.ENCRYPTION_SALT || 'default-salt',
+  secret: process.env.ENCRYPTION_KEY as string,
+  salt: process.env.ENCRYPTION_SALT as string,
 });
 
 export const User = mongoose.model<IUser>('User', userSchema);
