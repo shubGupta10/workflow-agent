@@ -21,10 +21,10 @@ export const LLM_POLICY: Record<
     },
 
     PLAN_GENERATION: {
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-2.0-flash-exp",
         maxInputTokens: 50000,
-        maxOutputTokens: 2048,
-        temperature: 0.2,
+        maxOutputTokens: 4096,
+        temperature: 0.1,
     },
 
     PR_REVIEW: {

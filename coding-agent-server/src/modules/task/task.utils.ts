@@ -6,6 +6,8 @@ import octokit from "../../lib/Octokit";
 import crypto from "crypto";
 import redis, { CACHE_TTL_SECONDS } from "../../lib/redis";
 import { TimelineEnum } from "./task.enum";
+import fs from "fs";
+import path from "path";
 
 function normalizeRepoUrl(repoUrl: string) {
     return repoUrl
@@ -67,8 +69,11 @@ export async function understandRepo(repoUrl: string, taskId: string) {
 
     const containerName = `sandbox-${taskId}`;
     const image = "node:18-alpine";
+    const tempScriptPath = path.join(process.cwd(), `analyze-${taskId}.js`);
 
     try {
+        // Write script to local temp file
+        await fs.promises.writeFile(tempScriptPath, INTERNAL_ANALYSIS_SCRIPT);
 
         await execAsync(
             `docker run -d --name ${containerName} --rm --workdir /app ${image} tail -f /dev/null`
@@ -80,15 +85,21 @@ export async function understandRepo(repoUrl: string, taskId: string) {
             `docker exec ${containerName} git clone --depth 1 ${repoUrl} .`
         );
 
+        // Copy script to container
+        await execAsync(`docker cp "${tempScriptPath}" ${containerName}:/tmp/analyze.js`);
 
-        const scriptPath = "/tmp/analyze.js";
-        const scriptBase64 = Buffer.from(INTERNAL_ANALYSIS_SCRIPT).toString("base64");
-
+        // Execute script
         const { stdout } = await execAsync(
-            `docker exec ${containerName} sh -c "echo '${scriptBase64}' | base64 -d > ${scriptPath} && node ${scriptPath}"`
+            `docker exec ${containerName} node /tmp/analyze.js`
         );
 
         await execAsync(`docker stop ${containerName}`);
+
+        // Clean up temp file
+        try {
+            await fs.promises.unlink(tempScriptPath);
+        } catch { }
+
 
         const trimmedOutput = stdout.trim();
         if (!trimmedOutput) {
@@ -115,6 +126,10 @@ export async function understandRepo(repoUrl: string, taskId: string) {
     } catch (error) {
         try {
             await execAsync(`docker stop ${containerName}`);
+        } catch { }
+        // Clean up temp file on error
+        try {
+            await fs.promises.unlink(tempScriptPath);
         } catch { }
         throw error;
     }
