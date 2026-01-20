@@ -12,9 +12,12 @@ import { TimelineChat } from "./TimelineChat";
 
 interface TaskHistoryProps {
     taskDetails: TaskDetails;
+    onApprove?: () => void;
+    onEdit?: () => void;
+    isLoading?: boolean;
 }
 
-export function TaskHistory({ taskDetails }: TaskHistoryProps) {
+export function TaskHistory({ taskDetails, onApprove, onEdit, isLoading }: TaskHistoryProps) {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
         repo: true,
         plan: true,
@@ -293,6 +296,30 @@ export function TaskHistory({ taskDetails }: TaskHistoryProps) {
                                         </ReactMarkdown>
                                     </div>
                                 </div>
+
+                                {/* Action Buttons for AWAITING_APPROVAL status */}
+                                {taskDetails.status === 'AWAITING_APPROVAL' && onApprove && (
+                                    <div className="flex gap-3 mt-4 pt-4 border-t border-border">
+                                        <Button
+                                            onClick={onApprove}
+                                            disabled={isLoading}
+                                            className="gap-2"
+                                        >
+                                            {isLoading ? 'Processing...' : 'Approve & Execute'}
+                                        </Button>
+                                        {/* Edit Request - TODO: Implement feedback loop feature
+                                        {onEdit && (
+                                            <Button
+                                                variant="outline"
+                                                onClick={onEdit}
+                                                disabled={isLoading}
+                                            >
+                                                Edit Request
+                                            </Button>
+                                        )}
+                                        */}
+                                    </div>
+                                )}
                             </>
                         )}
                     </CardContent>

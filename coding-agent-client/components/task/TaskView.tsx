@@ -83,7 +83,10 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
 
         const cachedDetails = getCachedTaskDetails(activeSession.taskId);
         if (cachedDetails) {
-            // Already cached, don't fetch again
+            // Sync session status from cached details if it's awaiting approval
+            if (cachedDetails.status === 'AWAITING_APPROVAL' && activeSession.status !== 'AWAITING_APPROVAL') {
+                updateSessionStatus(activeSession.id, 'AWAITING_APPROVAL');
+            }
             return;
         }
 
@@ -94,6 +97,15 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                 const details = response.data;
                 if (details) {
                     setTaskDetails(activeSession.taskId!, details);
+
+                    // Sync session status from backend
+                    if (details.status === 'AWAITING_APPROVAL' && activeSession.status !== 'AWAITING_APPROVAL') {
+                        updateSessionStatus(activeSession.id, 'AWAITING_APPROVAL');
+                    } else if (details.status === 'COMPLETED' && activeSession.status !== 'COMPLETED') {
+                        updateSessionStatus(activeSession.id, 'COMPLETED');
+                    } else if (details.status === 'EXECUTING' && activeSession.status !== 'EXECUTING') {
+                        updateSessionStatus(activeSession.id, 'EXECUTING');
+                    }
                 }
             } catch (error) {
                 console.error('[TaskView] Failed to fetch task details:', error);
@@ -103,7 +115,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
         };
 
         fetchDetails();
-    }, [activeSession?.taskId, getCachedTaskDetails, setTaskDetails]);
+    }, [activeSession?.taskId, getCachedTaskDetails, setTaskDetails, activeSession?.id, activeSession?.status, updateSessionStatus]);
 
     // Re-show action selection or input prompt if user left at those states
     useEffect(() => {
@@ -568,7 +580,12 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                             {activeSession.taskId && !taskDetailsLoading && (() => {
                                 const taskDetails = getCachedTaskDetails(activeSession.taskId);
                                 return taskDetails ? (
-                                    <TaskHistory taskDetails={taskDetails} />
+                                    <TaskHistory
+                                        taskDetails={taskDetails}
+                                        onApprove={handleApprove}
+                                        onEdit={handleEdit}
+                                        isLoading={isLoading}
+                                    />
                                 ) : null;
                             })()}
 
