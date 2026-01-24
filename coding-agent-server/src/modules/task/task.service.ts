@@ -157,10 +157,10 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
                     updatedAt: new Date()
                 });
 
-                return {
-                    text: cacheReview,
-                    model: 'cached'
-                }
+                fullText = cacheReview;
+                model = 'cached';
+                yield fullText;
+                nextStatus = TaskStatus.COMPLETED;
             }
         } catch (error) {
             console.warn("[REDIS] PR review cache read failed");

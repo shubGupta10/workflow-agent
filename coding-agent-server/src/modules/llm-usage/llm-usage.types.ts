@@ -16,6 +16,8 @@ export interface UsageSummary {
 
 export interface UsageByModel {
     modelId: string;
+    inputTokens: number;
+    outputTokens: number;
     totalTokens: number;
     totalCost: number;
     requestCount: number;
@@ -23,6 +25,8 @@ export interface UsageByModel {
 
 export interface UsageByUseCase {
     useCase: string;
+    inputTokens: number;
+    outputTokens: number;
     totalTokens: number;
     totalCost: number;
     requestCount: number;

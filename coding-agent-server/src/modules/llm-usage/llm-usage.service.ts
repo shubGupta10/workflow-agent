@@ -68,6 +68,8 @@ const getUsageByModel = async (userId: string, startDate?: Date, endDate?: Date)
         {
             $group: {
                 _id: "$modelId",
+                inputTokens: { $sum: "$inputTokens" },
+                outputTokens: { $sum: "$outputTokens" },
                 totalTokens: { $sum: "$totalTokens" },
                 totalCost: { $sum: "$estimatedCost" },
                 requestCount: { $sum: 1 }
@@ -78,6 +80,8 @@ const getUsageByModel = async (userId: string, startDate?: Date, endDate?: Date)
 
     return result.map(r => ({
         modelId: r._id,
+        inputTokens: r.inputTokens,
+        outputTokens: r.outputTokens,
         totalTokens: r.totalTokens,
         totalCost: r.totalCost,
         requestCount: r.requestCount
@@ -98,6 +102,8 @@ const getUsageByUseCase = async (userId: string, startDate?: Date, endDate?: Dat
         {
             $group: {
                 _id: "$useCase",
+                inputTokens: { $sum: "$inputTokens" },
+                outputTokens: { $sum: "$outputTokens" },
                 totalTokens: { $sum: "$totalTokens" },
                 totalCost: { $sum: "$estimatedCost" },
                 requestCount: { $sum: 1 }
@@ -108,6 +114,8 @@ const getUsageByUseCase = async (userId: string, startDate?: Date, endDate?: Dat
 
     return result.map(r => ({
         useCase: r._id,
+        inputTokens: r.inputTokens,
+        outputTokens: r.outputTokens,
         totalTokens: r.totalTokens,
         totalCost: r.totalCost,
         requestCount: r.requestCount

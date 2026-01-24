@@ -50,7 +50,14 @@ export async function executeLLM({
         const cachedResponse = await redis.get(cacheKey);
         if (cachedResponse) {
             console.log(`[LLM CACHE HIT] for use case: ${useCase}, model: ${modelConfig.id}`);
-            return JSON.parse(cachedResponse);
+            const parsed = JSON.parse(cachedResponse);
+            if (!parsed.text || parsed.text.trim() === '') {
+                console.warn('[LLM CACHE] Cached response has empty text, invalidating cache');
+                await redis.del(cacheKey);
+            } else {
+                console.log(`[LLM CACHE] Returning cached response with ${parsed.text.length} characters`);
+                return parsed;
+            }
         }
     } catch (error) {
         console.warn("[LLM CACHE READ ERROR]", error);

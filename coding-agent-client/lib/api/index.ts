@@ -318,3 +318,105 @@ export const getAvailableModels = async (): Promise<ModelsResponse> => {
     const data = await response.json();
     return data;
 };
+
+export interface UsageSummary {
+    totalTokens: number;
+    totalCost: number;
+    requestCount: number;
+}
+
+export interface UsageByModel {
+    modelId: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    totalCost: number;
+    requestCount: number;
+}
+
+export interface UsageByUseCase {
+    useCase: string;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+    totalCost: number;
+    requestCount: number;
+}
+
+export const getLLMUsageSummary = async (startDate?: string, endDate?: string) => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const url = `${appURl}/api/v1/llm-usage/summary${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getLLMUsageSummary error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
+export const getLLMUsageByModel = async (startDate?: string, endDate?: string) => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const url = `${appURl}/api/v1/llm-usage/by-model${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getLLMUsageByModel error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
+
+export const getLLMUsageByUseCase = async (startDate?: string, endDate?: string) => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
+    const url = `${appURl}/api/v1/llm-usage/by-usecase${params.toString() ? `?${params.toString()}` : ''}`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getLLMUsageByUseCase error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};
