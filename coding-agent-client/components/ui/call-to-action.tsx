@@ -2,6 +2,8 @@ import { MoveRight, PhoneCall } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+import Link from "next/link";
+
 function CTA() {
     return (
         <div className="w-full py-20 lg:py-32">
@@ -21,12 +23,16 @@ function CTA() {
                         </p>
                     </div>
                     <div className="flex flex-row gap-4">
-                        <Button className="gap-4" variant="outline">
-                            Schedule a demo <PhoneCall className="w-4 h-4" />
-                        </Button>
-                        <Button className="gap-4">
-                            Get started free <MoveRight className="w-4 h-4" />
-                        </Button>
+                        <Link href="/coming-soon">
+                            <Button className="gap-4" variant="outline">
+                                Schedule a demo <PhoneCall className="w-4 h-4" />
+                            </Button>
+                        </Link>
+                        <Link href="/coming-soon">
+                            <Button className="gap-4">
+                                Get started free <MoveRight className="w-4 h-4" />
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>

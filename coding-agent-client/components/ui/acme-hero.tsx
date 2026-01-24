@@ -41,7 +41,7 @@ export function Hero() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4, duration: 0.5 }}
                         >
-                            <Link href="/login">
+                            <Link href="/coming-soon">
                                 <Button className="rounded-xl px-8 h-auto py-3 text-base">
                                     Get Started
                                     <ArrowRight className="w-5 h-5 ml-2" />

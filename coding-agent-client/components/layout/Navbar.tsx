@@ -32,7 +32,11 @@ export function Navbar() {
   }, [pathname]);
 
   const handleLoginClick = () => {
-    router.push("/login");
+    if (process.env.NODE_ENV === "development") {
+      router.push("/login");
+    } else {
+      router.push("/coming-soon");
+    }
   };
 
   const handleLogout = () => {
