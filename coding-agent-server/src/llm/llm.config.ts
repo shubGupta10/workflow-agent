@@ -8,43 +8,36 @@ export interface ModelConfig {
 
 export const AvailableModels: ModelConfig[] = [
     {
-        id: "gemini-2.0-flash-exp",
-        name: "Gemini 2.0 Flash",
-        description: "Fast and capable",
-        maxOutputTokens: 4096,
-        temperature: 0.1,
-    },
-    {
         id: "gemini-2.5-flash",
         name: "Gemini 2.5 Flash",
-        description: "Most capable model",
-        maxOutputTokens: 4096,
+        description: "Fast and intelligent - production ready",
+        maxOutputTokens: 8192,
         temperature: 0.1,
     },
     {
-        id: "gemini-2.5-flash-lite",
-        name: "Gemini 2.5 Flash Lite",
-        description: "Lightweight and fast",
+        id: "gemini-2.5-pro",
+        name: "Gemini 2.5 Pro",
+        description: "Most capable - 1M token context",
         maxOutputTokens: 8192,
-        temperature: 0.3,
+        temperature: 0.1,
     },
     {
         id: "gemini-1.5-flash",
         name: "Gemini 1.5 Flash",
-        description: "Fast and cost efficient",
-        maxOutputTokens: 4096,
+        description: "Cost efficient and fast",
+        maxOutputTokens: 8192,
         temperature: 0.1,
     },
     {
         id: "gemini-1.5-pro",
         name: "Gemini 1.5 Pro",
-        description: "Most powerful model",
+        description: "High capability model",
         maxOutputTokens: 8192,
         temperature: 0.1,
     },
 ];
 
-export const DEFAULT_MODEL_ID = "gemini-2.0-flash-exp";
+export const DEFAULT_MODEL_ID = "gemini-2.5-flash";
 
 export type LLMUseCase = "REPO_UNDERSTANDING" | "PLAN_GENERATION" | "PR_REVIEW" | "CODE_GENERATION";
 
