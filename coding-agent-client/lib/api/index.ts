@@ -72,15 +72,16 @@ export const setTask = async (taskId: string, action: string, userInput: string)
     return data;
 };
 
-export const generatePlanStream = async (taskId: string) => {
+export const generatePlanStream = async (taskId: string, modelId?: string) => {
     if (!appURl) {
         throw new Error('BACKEND_URL environment variable is not set');
     }
 
     const url = `${appURl}/api/v1/tasks/generate-plan/${taskId}`;
     const response = await fetch(url, {
-        method: "GET",
-        headers: getHeaders()
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ modelId })
     });
 
     if (!response.ok) {
@@ -92,15 +93,16 @@ export const generatePlanStream = async (taskId: string) => {
     return response;
 };
 
-export const generatePlan = async (taskId: string) => {
+export const generatePlan = async (taskId: string, modelId?: string) => {
     if (!appURl) {
         throw new Error('BACKEND_URL environment variable is not set');
     }
 
     const url = `${appURl}/api/v1/tasks/generate-plan/${taskId}`;
     const response = await fetch(url, {
-        method: "GET",
-        headers: getHeaders()
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ modelId })
     });
 
     if (!response.ok) {
@@ -281,3 +283,38 @@ export const getLLMUsage = async () => {
     return data;
 };
 
+export interface AvailableModel {
+    id: string;
+    name: string;
+    description: string;
+}
+
+export interface ModelsResponse {
+    message: string;
+    data: {
+        models: AvailableModel[];
+        defaultModelId: string;
+    };
+}
+
+export const getAvailableModels = async (): Promise<ModelsResponse> => {
+    if (!appURl) {
+        throw new Error('BACKEND_URL environment variable is not set');
+    }
+
+    const url = `${appURl}/api/v1/llm/models`;
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: getHeaders(),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[API] getAvailableModels error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+};

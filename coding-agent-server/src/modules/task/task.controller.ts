@@ -30,12 +30,13 @@ const setTaskAction = errorWrapper(
 const generatePlan = errorWrapper(
     async (req: AuthRequest, res: Response) => {
         const { taskId } = req.params;
+        const { modelId } = req.body;
 
         // Set headers for NDJSON streaming
         res.setHeader("Content-Type", "application/x-ndjson");
         res.setHeader("Transfer-Encoding", "chunked");
 
-        const generator = await TaskService.generatePlan(taskId);
+        const generator = await TaskService.generatePlan(taskId, modelId);
         const iterator = generator[Symbol.asyncIterator]();
 
         // Manual iteration to capture the return value (usage data)

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTaskStore } from "@/lib/store/store";
 import { useAuthStore } from "@/lib/store/userStore";
+import { useModelStore } from "@/lib/store/modelStore";
 import { ActionType, Message } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessage } from "../chat/ChatMessage";
@@ -275,7 +276,8 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
             // STEP 3: Generate plan with STREAMING
             try {
                 // We use the direct client API for streaming, bypassing server actions to get the readable stream
-                const response = await generatePlanStream(taskId);
+                const { selectedModelId } = useModelStore.getState();
+                const response = await generatePlanStream(taskId, selectedModelId || undefined);
                 const contentType = response.headers.get("Content-Type") || "";
 
                 if (contentType.includes("application/json")) {

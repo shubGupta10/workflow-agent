@@ -104,7 +104,7 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
     return updatedTask;
 }
 
-const generatePlan = async function* (taskId: string) {
+const generatePlan = async function* (taskId: string, modelId?: string) {
 
     // fetch Task by taskId
     if (!taskId) {
@@ -172,7 +172,7 @@ const generatePlan = async function* (taskId: string) {
             userInput: typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput)
         });
 
-        const llmResponse = await reviewPullRequest(prompt);
+        const llmResponse = await reviewPullRequest(prompt, modelId);
         fullText = llmResponse.text;
         yield fullText;
 
@@ -204,7 +204,7 @@ const generatePlan = async function* (taskId: string) {
                 : undefined
         });
 
-        const stream = generatePlanLLMStream(prompt);
+        const stream = generatePlanLLMStream(prompt, modelId);
 
         const iterator = stream[Symbol.asyncIterator]();
         let result = await iterator.next();
@@ -216,8 +216,9 @@ const generatePlan = async function* (taskId: string) {
             result = await iterator.next();
         }
 
-        usage = result.value as LLMUsage;
-        model = "gemini-1.5-flash";
+        const streamResult = result.value as LLMUsage & { model: string };
+        usage = streamResult;
+        model = streamResult.model;
 
         nextStatus = TaskStatus.AWAITING_APPROVAL;
     }

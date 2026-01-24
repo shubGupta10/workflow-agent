@@ -5,6 +5,7 @@ import { connectDB } from "./lib/db";
 
 import taskRouter from "./routes/task/task.router";
 import authRoutes from "./routes/user/user.router";
+import llmRouter from "./routes/llm/llm.router";
 
 dotenv.config();
 
@@ -25,18 +26,7 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/v1", taskRouter);
 
-app.use((err: any, req: express.Request, res: express.Response) => {
-  console.error("[ERROR]", err);
-
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-
-  res.status(statusCode).json({
-    success: false,
-    error: message,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
-  });
-});
+app.use("/api/v1", llmRouter);
 
 const PORT = process.env.PORT || 5500;
 
