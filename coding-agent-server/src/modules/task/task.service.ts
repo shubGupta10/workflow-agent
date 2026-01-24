@@ -172,7 +172,7 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
             userInput: typeof existingTask.userInput === 'string' ? existingTask.userInput : JSON.stringify(existingTask.userInput)
         });
 
-        const llmResponse = await reviewPullRequest(prompt, modelId);
+        const llmResponse = await reviewPullRequest(prompt, modelId, existingTask.userId, taskId);
         fullText = llmResponse.text;
         yield fullText;
 
@@ -204,7 +204,7 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
                 : undefined
         });
 
-        const stream = generatePlanLLMStream(prompt, modelId);
+        const stream = generatePlanLLMStream(prompt, modelId, existingTask.userId, taskId);
 
         const iterator = stream[Symbol.asyncIterator]();
         let result = await iterator.next();

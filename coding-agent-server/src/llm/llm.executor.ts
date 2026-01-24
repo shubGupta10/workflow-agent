@@ -3,18 +3,23 @@ import { LLMResult, LLMUsage } from "./llm.types";
 import { LLMUseCase, UseCaseConfig, getModelById, getDefaultModel } from "./llm.config";
 import crypto from "crypto";
 import redis, { CACHE_TTL_SECONDS } from "../lib/redis";
+import { LLMUsageService } from "../modules/llm-usage/llm-usage.service";
 
 
 interface ExecuteLLMInput {
     prompt: string;
     useCase: LLMUseCase;
     modelId?: string;
+    userId?: string;
+    taskId?: string;
 }
 
 export async function executeLLM({
     prompt,
     useCase,
     modelId,
+    userId,
+    taskId,
 }: ExecuteLLMInput): Promise<LLMResult> {
     const useCaseConfig = UseCaseConfig[useCase];
 
@@ -84,6 +89,22 @@ export async function executeLLM({
             console.warn("[LLM CACHE WRITE ERROR]", cacheStoreError);
         }
 
+        if (userId && LLMResult.usage) {
+            try {
+                await LLMUsageService.logUsage({
+                    userId,
+                    taskId,
+                    useCase,
+                    modelId: modelConfig.id,
+                    inputTokens: LLMResult.usage.inputTokens,
+                    outputTokens: LLMResult.usage.outputTokens,
+                    totalTokens: LLMResult.usage.totalTokens
+                });
+            } catch (usageLogError) {
+                console.warn("[LLM USAGE LOG ERROR]", usageLogError);
+            }
+        }
+
         return LLMResult;
     } catch (error) {
         console.error("LLM execution failed", error);
@@ -95,6 +116,8 @@ export async function* executeLLMStream({
     prompt,
     useCase,
     modelId,
+    userId,
+    taskId,
 }: ExecuteLLMInput): AsyncGenerator<string, LLMUsage & { model: string }, unknown> {
     const useCaseConfig = UseCaseConfig[useCase];
 
@@ -143,6 +166,22 @@ export async function* executeLLMStream({
             totalTokens: response.usageMetadata?.totalTokenCount,
             model: modelConfig.id,
         };
+
+        if (userId && usage.inputTokens && usage.outputTokens && usage.totalTokens) {
+            try {
+                await LLMUsageService.logUsage({
+                    userId,
+                    taskId,
+                    useCase,
+                    modelId: modelConfig.id,
+                    inputTokens: usage.inputTokens,
+                    outputTokens: usage.outputTokens,
+                    totalTokens: usage.totalTokens
+                });
+            } catch (usageLogError) {
+                console.warn("[LLM USAGE LOG ERROR]", usageLogError);
+            }
+        }
 
         return usage;
     } catch (error) {
