@@ -32,7 +32,9 @@ export function Navbar() {
   }, [pathname]);
 
   const handleLoginClick = () => {
-    if (process.env.NEXT_PUBLIC_NODE_ENV === "development") {
+    const env = process.env.NEXT_PUBLIC_NODE_ENV;
+
+    if (env === "development") {
       router.push("/login");
     } else {
       router.push("/coming-soon");

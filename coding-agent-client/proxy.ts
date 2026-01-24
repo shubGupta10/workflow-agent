@@ -3,7 +3,7 @@ import { NextResponse, NextRequest } from 'next/server'
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = new URL(request.url)
 
-  const publicRoutes = ['/', '/login', '/auth/callback']
+  const publicRoutes = ['/', '/login', '/auth/callback', "/coming-soon"]
   const isPublicRoute = publicRoutes.includes(pathname)
 
   const tokenInUrl = searchParams.get('token')
