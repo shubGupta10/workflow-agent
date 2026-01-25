@@ -5,8 +5,9 @@ const router = Router();
 import { createTask, approvePlan, executeTask, generatePlan, setTaskAction, listSidebarTasks, deleteTask, taskDetails } from "../../modules/task/task.controller";
 import { requireAuth } from "../../middleware/auth.middleware";
 import { rateLimit } from "../../middleware/ratelimit.middleware";
+import { checkUsageLimit } from "../../middleware/usageLimit.middleware";
 
-router.post("/tasks/create-task", requireAuth, rateLimit({ key: "create-task", limit: 5, windowInSeconds: 60 }), createTask);
+router.post("/tasks/create-task", requireAuth, checkUsageLimit, rateLimit({ key: "create-task", limit: 5, windowInSeconds: 60 }), createTask);
 
 router.post("/tasks/set-action", requireAuth, setTaskAction);
 

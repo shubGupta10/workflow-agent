@@ -7,6 +7,7 @@ import taskRouter from "./routes/task/task.router";
 import authRoutes from "./routes/user/user.router";
 import llmRouter from "./routes/llm/llm.router";
 import llmUsageRouter from "./routes/llm-usage/llm-usage.router";
+import subscriptionRouter from "./routes/subscription/subscription.router";
 
 dotenv.config();
 
@@ -30,6 +31,8 @@ app.use("/api/v1", taskRouter);
 app.use("/api/v1", llmRouter);
 
 app.use("/api/v1", llmUsageRouter);
+
+app.use("/api/v1", subscriptionRouter);
 
 const PORT = process.env.PORT || 5500;
 

@@ -2,6 +2,7 @@ import { Response } from "express";
 import { errorWrapper } from "../../middleware/errorWrapper";
 import { TaskService } from "./task.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
+import { subscriptionService } from "../subscription/subscription.service";
 
 const createTask = errorWrapper(
     async (req: AuthRequest, res: Response) => {
@@ -9,6 +10,9 @@ const createTask = errorWrapper(
         const userId = req.user.userId;
 
         const task = await TaskService.createTask({ repoUrl, userId });
+
+        await subscriptionService.incrementUsage(userId);
+
         res.status(201).json({
             message: "Task created successfully",
             data: task
@@ -32,24 +36,20 @@ const generatePlan = errorWrapper(
         const { taskId } = req.params;
         const { modelId } = req.body;
 
-        // Set headers for NDJSON streaming
         res.setHeader("Content-Type", "application/x-ndjson");
         res.setHeader("Transfer-Encoding", "chunked");
 
         const generator = await TaskService.generatePlan(taskId, modelId);
         const iterator = generator[Symbol.asyncIterator]();
 
-        // Manual iteration to capture the return value (usage data)
         let result = await iterator.next();
 
         while (!result.done) {
             const chunk = result.value;
-            // Send text chunk as JSON line
             res.write(JSON.stringify({ type: "chunk", content: chunk }) + "\n");
             result = await iterator.next();
         }
 
-        // Send usage data as final JSON line
         if (result.value) {
             res.write(JSON.stringify({ type: "usage", data: result.value }) + "\n");
         }

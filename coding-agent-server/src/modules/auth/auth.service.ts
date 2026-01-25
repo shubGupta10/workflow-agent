@@ -2,6 +2,7 @@ import axios from "axios";
 import jwt from "jsonwebtoken";
 import { Octokit } from "@octokit/rest";
 import { User } from "../user/user.model";
+import { subscriptionService } from "../subscription/subscription.service";
 
 export const handleGithubCallback = async (code: string): Promise<string> => {
   const tokenRes = await axios.post(
@@ -48,6 +49,11 @@ export const handleGithubCallback = async (code: string): Promise<string> => {
   } else {
     user.githubAccessToken = accessToken;
     await user.save();
+  }
+
+  const existingSubscription = await subscriptionService.getSubscription(user._id.toString()).catch(() => null);
+  if (!existingSubscription) {
+    await subscriptionService.createSubscription(user._id.toString());
   }
 
   const jwtToken = jwt.sign(
