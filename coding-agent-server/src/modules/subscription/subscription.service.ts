@@ -1,13 +1,19 @@
 import subscriptionModel from "./subscription.model";
 import { SubscriptionTier, SubscriptionStatus } from "./subscription.enum";
+import { SUBSCRIPTION_LIMITS } from "./subscription.config";
 
 const createSubscription = async (userId: string) => {
+    if (!userId) {
+        throw new Error("userId is required to create subscription");
+    }
+
+    const tier = SubscriptionTier.FREE;
     const subscription = await subscriptionModel.create({
         userId,
-        tier: SubscriptionTier.FREE,
+        tier,
         status: SubscriptionStatus.ACTIVE,
         taskUsedToday: 0,
-        dailyTaskLimit: 5,
+        dailyTaskLimit: SUBSCRIPTION_LIMITS[tier].dailyTaskLimit,
         lastResetDate: new Date()
     })
     return subscription;
@@ -45,7 +51,12 @@ const checkLimit = async (userId: string): Promise<boolean> => {
     const subscription = await getSubscription(userId);
 
     if (subscription.taskUsedToday >= subscription.dailyTaskLimit) {
-        throw new Error("Daily task limit exceeded. Please upgrade your plan or try again tomorrow.");
+        const planName = SUBSCRIPTION_LIMITS[subscription.tier].name;
+
+        throw new Error(
+            `Daily task limit exceeded (${subscription.taskUsedToday}/${subscription.dailyTaskLimit}). ` +
+            `You are on the ${planName}. Upgrade your plan for more tasks or try again tomorrow.`
+        );
     }
     return true;
 }
