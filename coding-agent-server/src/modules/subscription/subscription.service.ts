@@ -69,13 +69,17 @@ const getUsageStats = async (userId: string) => {
 
     const remaningTaskToday = subscription.dailyTaskLimit - subscription.taskUsedToday;
 
+    const now = new Date();
+    const nextReset = new Date(now);
+    nextReset.setHours(24, 0, 0, 0);
+
     const stats = {
         tier: subscription.tier,
         status: subscription.status,
         taskUsedToday: subscription.taskUsedToday,
         remainingTaskToday: remaningTaskToday,
         dailyTaskLimit: subscription.dailyTaskLimit,
-        resetTime: subscription.lastResetDate
+        resetTime: nextReset
     }
 
     return stats;

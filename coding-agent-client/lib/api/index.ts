@@ -36,6 +36,22 @@ export const createTask = async (repoUrl: string, userId: string) => {
     });
 
     if (!response.ok) {
+        // Handle 429 (quota exceeded) specially
+        if (response.status === 429) {
+            try {
+                const errorData = await response.json();
+                const error: any = new Error(errorData.message || 'Daily limit exceeded');
+                error.status = 429;
+                error.quotaError = errorData;
+                throw error;
+            } catch (parseError) {
+                // If JSON parsing fails, throw generic error
+                const error: any = new Error('Daily limit exceeded');
+                error.status = 429;
+                throw error;
+            }
+        }
+
         const errorText = await response.text();
         console.error('[API] Error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
