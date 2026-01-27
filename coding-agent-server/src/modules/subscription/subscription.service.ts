@@ -62,6 +62,7 @@ const checkLimit = async (userId: string): Promise<boolean> => {
 }
 
 const getUsageStats = async (userId: string) => {
+    await checkAndResetIfNeeded(userId);
     const subscription = await getSubscription(userId);
     if (!subscription) {
         throw new Error("Subscription not found")
