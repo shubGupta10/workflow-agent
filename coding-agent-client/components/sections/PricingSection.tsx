@@ -22,8 +22,8 @@ const pricingPlans = [
     },
     {
         name: "PRO",
-        price: "9",
-        yearlyPrice: "7",
+        price: "5",
+        yearlyPrice: "4",
         period: "per month",
         features: [
             "25 tasks per day",
@@ -41,8 +41,8 @@ const pricingPlans = [
     },
     {
         name: "TEAM",
-        price: "29",
-        yearlyPrice: "24",
+        price: "12",
+        yearlyPrice: "10",
         period: "per month",
         features: [
             "Unlimited tasks",
