@@ -9,9 +9,15 @@ export async function createTaskAction(repoUrl: string, userId: string, action?:
         }
         const result = await createTask(repoUrl, userId, action, userInput);
         return { success: true, data: result };
-    } catch (error) {
-        console.error("createTaskAction error:", error);
-        return { success: false, error: error instanceof Error ? error.message : "Failed to create task" };
+    } catch (error: any) {
+        if (error?.status !== 429) {
+            console.error("createTaskAction error:", error);
+        }
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Failed to create task",
+            status: error?.status
+        };
     }
 }
 

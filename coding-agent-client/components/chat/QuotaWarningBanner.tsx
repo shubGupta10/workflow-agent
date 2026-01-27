@@ -71,28 +71,30 @@ export function QuotaWarningBanner({
                             }`} />
                         <span>Task Limit Warning</span>
                     </DialogTitle>
-                    <DialogDescription className="pt-2">
-                        <div className={`rounded-lg border p-4 ${isCritical
-                            ? "border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400"
-                            : "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                            }`}>
-                            {remainingTasks === 0 ? (
-                                <p className="text-sm font-medium">
-                                    You've reached your daily limit of <strong>{totalTasks} tasks</strong>.
-                                </p>
-                            ) : remainingTasks === 1 ? (
-                                <p className="text-sm font-medium">
-                                    You have only <strong>1 task</strong> remaining today ({usedTasks}/{totalTasks} used).
-                                </p>
-                            ) : (
-                                <p className="text-sm font-medium">
-                                    You have <strong>{remainingTasks} tasks</strong> remaining today ({usedTasks}/{totalTasks} used).
-                                </p>
-                            )}
+                    <DialogDescription className="pt-2" asChild>
+                        <div>
+                            <div className={`rounded-lg border p-4 ${isCritical
+                                ? "border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400"
+                                : "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                }`}>
+                                {remainingTasks === 0 ? (
+                                    <p className="text-sm font-medium">
+                                        You've reached your daily limit of <strong>{totalTasks} tasks</strong>.
+                                    </p>
+                                ) : remainingTasks === 1 ? (
+                                    <p className="text-sm font-medium">
+                                        You have only <strong>1 task</strong> remaining today ({usedTasks}/{totalTasks} used).
+                                    </p>
+                                ) : (
+                                    <p className="text-sm font-medium">
+                                        You have <strong>{remainingTasks} tasks</strong> remaining today ({usedTasks}/{totalTasks} used).
+                                    </p>
+                                )}
+                            </div>
+                            <p className="mt-4 text-sm text-muted-foreground">
+                                Your quota will reset at midnight. Upgrade to get more tasks per day!
+                            </p>
                         </div>
-                        <p className="mt-4 text-sm text-muted-foreground">
-                            Your quota will reset at midnight. Upgrade to get more tasks per day!
-                        </p>
                     </DialogDescription>
                 </DialogHeader>
                 <div className="flex gap-2 justify-end">

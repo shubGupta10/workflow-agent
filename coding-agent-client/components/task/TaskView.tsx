@@ -243,11 +243,18 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
             removeLastMessage(activeSession.id);
 
             if (!result.success || !result.data) {
-                addMessage(activeSession.id, {
-                    type: "system",
-                    content: result.error || "Failed to create task",
-                    systemType: "error"
-                });
+                if ((result as any).status === 429) {
+                    addMessage(activeSession.id, {
+                        type: "system",
+                        content: "You have reached your daily task limit. Please upgrade your plan or check back tomorrow.",
+                    });
+                } else {
+                    addMessage(activeSession.id, {
+                        type: "system",
+                        content: result.error || "Failed to create task",
+                        systemType: "error"
+                    });
+                }
                 setIsLoading(false);
                 return;
             }
