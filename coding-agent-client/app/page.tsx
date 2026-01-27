@@ -1,10 +1,11 @@
-import { Hero } from "@/components/ui/acme-hero";
+import { HeroSection } from "@/components/blocks/hero-section";
 import { FeatureSteps } from "@/components/ui/feature-section";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 import FAQs from "@/components/ui/text-reveal-faqs";
 import { CTA } from "@/components/ui/call-to-action";
 import { PricingSection } from "@/components/sections/PricingSection";
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
+import { Icons } from "@/components/ui/icons";
 
 const workflowFeatures = [
   {
@@ -30,7 +31,30 @@ const workflowFeatures = [
 export default function Home() {
   return (
     <>
-      <Hero />
+      <HeroSection
+        badge={{
+          text: "New: Integrated Sandbox Environment",
+          action: {
+            text: "Learn more",
+            href: "#features",
+          },
+        }}
+        title="Build and Fix Code Faster with AI"
+        description="Your intelligent coding companion. Paste a repository URL and let our agent review code, fix bugs, and implement new features automatically."
+        actions={[
+          {
+            text: "Start Coding",
+            href: "/chat",
+            variant: "default",
+          },
+          {
+            text: "GitHub",
+            href: "https://github.com",
+            variant: "outline",
+            icon: <Icons.gitHub className="h-5 w-5" />,
+          },
+        ]}
+      />
       <FeatureSteps
         features={workflowFeatures}
         title="How It Works"
