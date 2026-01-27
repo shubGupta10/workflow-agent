@@ -4,6 +4,7 @@ import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section
 import FAQs from "@/components/ui/text-reveal-faqs";
 import { CTA } from "@/components/ui/call-to-action";
 import { PricingSection } from "@/components/sections/PricingSection";
+import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 
 const workflowFeatures = [
   {
@@ -47,6 +48,7 @@ export default function Home() {
         </div>
       </section>
       <PricingSection />
+      <TestimonialsSection />
       <FAQs />
       <CTA />
     </>
