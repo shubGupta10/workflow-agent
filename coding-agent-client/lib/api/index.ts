@@ -19,20 +19,30 @@ const getHeaders = () => {
     return headers;
 };
 
-export const createTask = async (repoUrl: string, userId: string) => {
+export const createTask = async (repoUrl: string, userId: string, action?: string, userInput?: string) => {
     if (!appURl) {
         throw new Error('BACKEND_URL environment variable is not set');
     }
 
     const url = `${appURl}/api/v1/tasks/create-task`;
 
+    const body: any = {
+        repoUrl,
+        userId
+    };
+
+    // Add optional parameters if provided
+    if (action) {
+        body.action = action;
+    }
+    if (userInput) {
+        body.userInput = userInput;
+    }
+
     const response = await fetch(url, {
         method: "POST",
         headers: getHeaders(),
-        body: JSON.stringify({
-            repoUrl,
-            userId
-        })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {

@@ -6,16 +6,30 @@ import { subscriptionService } from "../subscription/subscription.service";
 
 const createTask = errorWrapper(
     async (req: AuthRequest, res: Response) => {
-        const { repoUrl } = req.body;
+        const { repoUrl, action, userInput } = req.body;
         const userId = req.user.userId;
 
-        const task = await TaskService.createTask({ repoUrl, userId });
+        const taskId = await TaskService.createTask({ repoUrl, userId });
 
         await subscriptionService.incrementUsage(userId);
 
+        let responseData;
+        if (action) {
+            const updatedTask = await TaskService.setTaskAction(taskId, action, userInput);
+            responseData = {
+                taskId: updatedTask._id.toString(),
+                status: updatedTask.status,
+                action: updatedTask.action,
+                userInput: updatedTask.userInput
+            };
+        } else {
+            const taskDetails = await TaskService.taskDetails(taskId);
+            responseData = taskDetails;
+        }
+
         res.status(201).json({
             message: "Task created successfully",
-            data: task
+            data: responseData
         })
     }
 )

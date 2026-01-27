@@ -54,6 +54,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
     const [selectedAction, setSelectedAction] = useState<ActionType | null>(null);
     const [currentPlan, setCurrentPlan] = useState<string | null>(null);
     const [taskDetailsLoading, setTaskDetailsLoading] = useState(false);
+    const [pendingRepoUrl, setPendingRepoUrl] = useState<string | null>(null);
 
     const activeSession = getActiveSession();
 
@@ -188,10 +189,33 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
 
         addMessage(activeSession.id, { type: "user", content: input });
 
-        // STEP 1: CREATE TASK (repo URL submission)
+        // STEP 1: STORE REPO URL (no API call yet)
         if (activeSession.status === "AWAITING_REPO") {
+            if (!user?._id) {
+                addMessage(activeSession.id, { type: "system", content: "Please log in to continue", systemType: "error" });
+                return;
+            }
+
+            // Store repo URL in state
+            setPendingRepoUrl(input);
+
+            updateSession(activeSession.id, {
+                title: input.split("/").slice(-1)[0] || "Task"
+            });
+            updateSessionStatus(activeSession.id, "AWAITING_ACTION");
+            addMessage(activeSession.id, {
+                type: "system",
+                content: "Repository URL saved! What would you like to do?",
+                systemType: "action-selection"
+            });
+        }
+        // STEP 2: CREATE TASK WITH ACTION (combined API call)
+        else if (activeSession.status === "AWAITING_INPUT") {
             setIsLoading(true);
-            addMessage(activeSession.id, { type: "loading", content: "Analyzing repository…" });
+            addMessage(activeSession.id, { type: "loading", content: "Creating task and analyzing repository…" });
+
+            const action = selectedAction || activeSession.selectedAction;
+            const repoUrl = pendingRepoUrl;
 
             if (!user?._id) {
                 removeLastMessage(activeSession.id);
@@ -200,82 +224,56 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                 return;
             }
 
-            const result = await createTaskAction(input, user._id);
-            removeLastMessage(activeSession.id);
-
-            if (result.success && result.data) {
-                const taskId = typeof result.data === 'string' ? result.data : (result.data.data || result.data.id || result.data.taskId);
-
-                console.log('[TaskView] Task created, taskId:', taskId);
-
-                setCurrentTaskId(taskId);
-
-                updateSession(activeSession.id, {
-                    taskId: taskId,
-                    title: input.split("/").slice(-1)[0] || "Task"
-                });
-                updateSessionStatus(activeSession.id, "AWAITING_ACTION");
+            if (!repoUrl || !action) {
+                removeLastMessage(activeSession.id);
                 addMessage(activeSession.id, {
                     type: "system",
-                    content: "Repository analyzed successfully! What would you like to do?",
-                    systemType: "action-selection"
+                    content: `Error: Missing repo URL or action. Please start over.`,
+                    systemType: "error"
                 });
+                setIsLoading(false);
+                return;
+            }
+
+            // Make SINGLE combined API call with repoUrl, action, and userInput
+            const result = await createTaskAction(repoUrl, user._id, action, input);
+            removeLastMessage(activeSession.id);
+
+            if (!result.success || !result.data) {
+                addMessage(activeSession.id, {
+                    type: "system",
+                    content: result.error || "Failed to create task",
+                    systemType: "error"
+                });
+                setIsLoading(false);
+                return;
+            }
+
+            let taskId;
+            if (typeof result.data === 'string') {
+                taskId = result.data;
+            } else if (result.data.data) {
+                taskId = result.data.data._id || result.data.data.taskId;
             } else {
-                addMessage(activeSession.id, {
-                    type: "system",
-                    content: result.error || "Failed to analyze repository",
-                    systemType: "error"
-                });
+                taskId = result.data._id || result.data.taskId;
             }
-            setIsLoading(false);
-        }
-        // STEP 2 + 3: SET TASK ACTION + GENERATE PLAN (input submission after action selected)
-        else if (activeSession.status === "AWAITING_INPUT") {
-            setIsLoading(true);
-            addMessage(activeSession.id, { type: "loading", content: "Processing your request…" });
 
-            const taskId = currentTaskId || activeSession.taskId;
-            const action = selectedAction || activeSession.selectedAction;
-
-            console.log('[TaskView] AWAITING_INPUT - taskId sources:', {
-                zustandTaskId: currentTaskId,
-                sessionTaskId: activeSession.taskId,
-                finalTaskId: taskId,
-                action,
-                sessionId: activeSession.id
-            });
-
-            if (!taskId || !action) {
-                removeLastMessage(activeSession.id);
+            if (!taskId) {
                 addMessage(activeSession.id, {
                     type: "system",
-                    content: `Error: Missing taskId (${taskId}) or action (${action}). Check console for details.`,
+                    content: "Error: Could not extract taskId from response. Check console for details.",
                     systemType: "error"
                 });
                 setIsLoading(false);
                 return;
             }
 
-            const setResult = await setTaskAction(taskId, action, input);
-
-            if (!setResult.success) {
-                removeLastMessage(activeSession.id);
-                addMessage(activeSession.id, {
-                    type: "system",
-                    content: setResult.error || "Failed to set task action",
-                    systemType: "error"
-                });
-                setIsLoading(false);
-                return;
-            }
-
+            setCurrentTaskId(taskId);
+            updateSession(activeSession.id, { taskId: taskId });
             updateSessionStatus(activeSession.id, "PLANNING");
-            removeLastMessage(activeSession.id);
             addMessage(activeSession.id, { type: "loading", content: "Generating plan…" });
 
-            // STEP 3: Generate plan with STREAMING
             try {
-                // We use the direct client API for streaming, bypassing server actions to get the readable stream
                 const { selectedModelId } = useModelStore.getState();
                 const response = await generatePlanStream(taskId, selectedModelId || undefined);
                 const contentType = response.headers.get("Content-Type") || "";
@@ -508,6 +506,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
         setCurrentTaskId(null);
         setSelectedAction(null);
         setCurrentPlan(null);
+        setPendingRepoUrl(null);
         createSession();
     };
 
