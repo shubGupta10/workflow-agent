@@ -527,15 +527,12 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                 case "action-selection":
                     return (
                         <ChatMessage key={message.id} message={message}>
-                            <div className="space-y-3">
-                                <p className="text-sm mb-3">{message.content}</p>
-                                <ActionSelectionCard onSelect={handleActionSelect} disabled={isLoading} />
-                            </div>
+                            <ActionSelectionCard onSelect={handleActionSelect} disabled={isLoading} />
                         </ChatMessage>
                     );
                 case "plan-display":
                     return (
-                        <ChatMessage key={message.id} message={message}>
+                        <ChatMessage key={message.id} message={message} hideBubble={true}>
                             <PlanDisplayCard
                                 plan={message.content}
                                 onApprove={handleApprove}
@@ -546,13 +543,13 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                     );
                 case "review":
                     return (
-                        <ChatMessage key={message.id} message={message}>
+                        <ChatMessage key={message.id} message={message} hideBubble={true}>
                             <ReviewDisplayCard review={message.content} />
                         </ChatMessage>
                     );
                 case "completion":
                     return (
-                        <ChatMessage key={message.id} message={message}>
+                        <ChatMessage key={message.id} message={message} hideBubble={true}>
                             <CompletionCard
                                 message={message.content}
                                 prUrl={message.metadata?.prUrl as string}
@@ -562,7 +559,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                     );
                 case "error":
                     return (
-                        <ChatMessage key={message.id} message={message}>
+                        <ChatMessage key={message.id} message={message} hideBubble={true}>
                             <ErrorCard error={message.content} />
                         </ChatMessage>
                     );

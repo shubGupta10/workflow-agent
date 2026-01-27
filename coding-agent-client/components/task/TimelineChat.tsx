@@ -4,6 +4,7 @@ import { TimelineEntry } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { useAuthStore } from "@/lib/store/userStore";
 import { formatTimelineContent } from "@/lib/utils/timelineFormat";
+import { CompletionCard } from "./SystemCard";
 
 interface TimelineChatProps {
     timeline: TimelineEntry[];
@@ -21,7 +22,36 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
     };
 
     const renderTimelineEntry = (entry: TimelineEntry) => {
-        const { role, createdAt, _id } = entry;
+        const { role, createdAt, _id, type, content } = entry;
+
+        // Filter out unwanted system messages
+        if (['task_created', 'repo_summary_saved', 'action_set'].includes(type)) {
+            return null;
+        }
+
+        // Check for task completion message
+        if (role === "system" && (content.includes("Task executed successfully") || content.includes("PR created:"))) {
+            const prUrlMatch = content.match(/https?:\/\/[^\s]+/);
+            const prUrl = prUrlMatch ? prUrlMatch[0] : undefined;
+            // Clean up message: remove the URL and "PR created:" label
+            let messageText = content;
+            if (prUrl) {
+                messageText = messageText.replace(prUrl, "");
+            }
+            messageText = messageText.replace("PR created:", "").trim();
+            if (messageText.endsWith(".")) messageText = messageText.slice(0, -1);
+            if (!messageText) messageText = "Task completed successfully";
+
+            return (
+                <div key={_id} className="flex justify-center my-6 w-full max-w-2xl mx-auto px-4">
+                    <CompletionCard
+                        message={messageText}
+                        prUrl={prUrl}
+                    />
+                </div>
+            );
+        }
+
         const displayContent = formatTimelineContent(entry, user);
 
         if (role === "system") {
