@@ -3,6 +3,7 @@ import { FeatureSteps } from "@/components/ui/feature-section";
 import { FeaturesSectionWithHoverEffects } from "@/components/ui/feature-section-with-hover-effects";
 import FAQs from "@/components/ui/text-reveal-faqs";
 import { CTA } from "@/components/ui/call-to-action";
+import { PricingSection } from "@/components/sections/PricingSection";
 
 const workflowFeatures = [
   {
@@ -45,6 +46,7 @@ export default function Home() {
           <FeaturesSectionWithHoverEffects />
         </div>
       </section>
+      <PricingSection />
       <FAQs />
       <CTA />
     </>
