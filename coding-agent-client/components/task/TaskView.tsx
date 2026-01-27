@@ -26,6 +26,8 @@ import {
     executeTaskAction,
 } from "@/app/actions";
 import { generatePlanStream } from "@/lib/api";
+import { QuotaWarningBanner } from "../chat/QuotaWarningBanner";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface TaskViewProps {
     onToggleSidebar?: () => void;
@@ -57,6 +59,7 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
     const [pendingRepoUrl, setPendingRepoUrl] = useState<string | null>(null);
 
     const activeSession = getActiveSession();
+    const { usageStats } = useSubscription();
 
     // Fetch user data on mount
     useEffect(() => {
@@ -629,6 +632,15 @@ export function TaskView({ onToggleSidebar, isMobile = false }: TaskViewProps = 
                     </div>
                 </ScrollArea>
             </div>
+
+            {usageStats && usageStats.remainingTaskToday <= 2 && (
+                <QuotaWarningBanner
+                    remainingTasks={usageStats.remainingTaskToday}
+                    usedTasks={usageStats.taskUsedToday}
+                    totalTasks={usageStats.dailyTaskLimit}
+                    tier={usageStats.tier}
+                />
+            )}
 
             {/* Input Area */}
             <div className="border-t border-border bg-background shrink-0">

@@ -37,7 +37,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             createdAt: new Date(),
         };
         set((state) => ({
-            sessions: [...state.sessions, session],
+            sessions: [session, ...state.sessions],
             activeSessionId: id,
         }));
         return id;

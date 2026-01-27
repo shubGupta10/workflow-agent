@@ -60,14 +60,14 @@ export function Sidebar({ onDeleteTask, isOpen = true, isMobile = false, onClose
         switch (status) {
             case "COMPLETED":
             case "REVIEW_COMPLETE":
-                return "bg-secondary/20 text-secondary-foreground";
+                return "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20";
             case "EXECUTING":
             case "PLANNING":
-                return "bg-primary/20 text-primary";
+                return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20";
             case "ERROR":
-                return "bg-destructive/20 text-destructive";
+                return "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20";
             default:
-                return "bg-muted text-muted-foreground";
+                return "bg-muted/50 text-muted-foreground border border-border";
         }
     };
 
