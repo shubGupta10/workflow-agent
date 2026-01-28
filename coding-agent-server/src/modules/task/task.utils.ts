@@ -19,7 +19,7 @@ function normalizeRepoUrl(repoUrl: string) {
 function getRepoCacheKey(repoUrl: string) {
     const normalized = normalizeRepoUrl(repoUrl);
     const hash = crypto.createHash("sha256").update(normalized).digest("hex");
-    return `repo:summary:${hash}`;
+    return `repo:summary:v2:${hash}`;
 }
 
 export async function createTaskRecord(taskData: CreateTaskRecordInput) {

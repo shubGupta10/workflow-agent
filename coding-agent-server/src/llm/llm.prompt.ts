@@ -3,90 +3,142 @@ export function buildPlanningPrompt(input: {
    action: string;
    userInput?: string;
 }) {
-   // Extract full repository understanding
    const tech = input.repoSummary.technologies || {};
    const fileMap = input.repoSummary.fileMap || {};
    const summary = input.repoSummary.summary || {};
+   const configs = input.repoSummary.configContents || {};
+   const analysis = input.repoSummary.analysis || {};
 
    const frameworks = tech.frameworks || [];
    const database = tech.database;
    const languages = tech.languages || [];
+   const styling = tech.styling || [];
+   const uiLibs = tech.uiLibraries || [];
+   const stateMgmt = tech.stateManagement || [];
 
-   // Build comprehensive repository context
+   const isFixMode = input.action.toLowerCase().includes('fix');
+
+   const MODE_RULES =
+      isFixMode
+         ? `
+MODE: FIX AN EXISTING ISSUE (DEBUG MODE)
+
+STRICT RULES:
+- DO NOT design new features.
+- DO NOT create new routes, components, or flows unless you PROVE they do not exist.
+- FIRST investigate the existing implementation.
+- Identify the exact failure point.
+- Propose the MINIMUM possible fix.
+- New files are NOT allowed unless explicitly justified.
+`
+         : `
+MODE: PLAN / IMPLEMENT A CHANGE
+
+RULES:
+- You may introduce new files and logic if required.
+- Follow existing patterns and structure strictly.
+- Prefer extending existing code over creating parallel systems.
+`;
+
    const prompt = `
-You are tasked with creating a detailed implementation plan for a code repository.
+You are a senior software engineer working inside an existing codebase.
 
 ====================================
-REPOSITORY UNDERSTANDING
+REPOSITORY CONTEXT
 ====================================
 
-TECHNOLOGIES:
+TECH STACK:
 - Languages: ${languages.join(', ') || 'Unknown'}
-- Frameworks: ${frameworks.map((f: any) => `${f.name} (${f.type})`).join(', ') || 'None detected'}
+- Frameworks: ${frameworks.join(', ') || 'None detected'}
+- Styling: ${styling.join(', ') || 'None detected'}
+- UI Libraries: ${uiLibs.join(', ') || 'None detected'}
+- State Management: ${stateMgmt.join(', ') || 'None detected'}
 - Database: ${database ? `${database.type} with ${database.orm}` : 'None detected'}
 - Package Manager: ${tech.packageManager || 'Unknown'}
 
+CONFIGURATION FILES:
+${Object.entries(configs)
+         .map(
+            ([name, content]) => `
+--- ${name} ---
+${content}
+`
+         )
+         .join('\n')}
+
+KEY FILE SNIPPETS:
+${Object.entries(analysis.fileInfo || {})
+         .filter(([_, info]: [string, any]) => info.snippet)
+         .slice(0, 8)
+         .map(
+            ([path, info]: [string, any]) => `
+--- ${path} ---
+// Exports: ${info.exports ? info.exports.join(', ') : 'none'}
+${info.snippet}
+`
+         )
+         .join('\n')}
+
 FILE STRUCTURE MAP:
-${Object.entries(fileMap).map(([category, files]: [string, any]) => {
-      if (!files || files.length === 0) return '';
-      return `
-${category.toUpperCase()} (${files.length} files):
-${files.slice(0, 5).map((f: string) => `  - ${f}`).join('\n')}${files.length > 5 ? `\n  ... and ${files.length - 5} more` : ''}`;
-   }).filter(Boolean).join('\n')}
+${Object.entries(fileMap)
+         .map(([category, files]: [string, any]) => {
+            if (!files || files.length === 0) return '';
+            return `${category.toUpperCase()}: ${files.slice(0, 10).join(', ')}${files.length > 10 ? ` (... +${files.length - 10})` : ''
+               }`;
+         })
+         .filter(Boolean)
+         .join('\n')}
 
 SUMMARY:
-- ${summary.totalModels || 0} models
-- ${summary.totalServices || 0} services  
-- ${summary.totalControllers || 0} controllers
-- ${summary.totalRoutes || 0} routes
 - ${summary.totalComponents || 0} components
-- ${summary.totalTests || 0} tests
+- ${summary.totalHooks || 0} hooks
+- ${summary.totalPages || 0} pages/routes
+- ${summary.totalModels || 0} models
+- ${summary.totalServices || 0} services
 
 ====================================
-CRITICAL RULES
+MODE & CONSTRAINTS
 ====================================
+${MODE_RULES}
 
-1. USE ONLY DETECTED TECHNOLOGIES
-   - ONLY use the languages, frameworks, and database listed above
-   - DO NOT suggest Prisma if Mongoose is detected
-   - DO NOT suggest Mongoose if Prisma is detected
-   - DO NOT suggest Next.js API routes if Express is the backend
-   - DO NOT invent technologies not listed
-
-2. FOLLOW EXISTING FILE PATTERNS
-   - Look at the FILE STRUCTURE MAP above
-   - Place new files in the same locations as existing similar files
-   - If models are in "src/modules/*/\*.model.ts", put new models there
-   - If services are in "src/services/", put new services there
-   - MATCH the existing naming conventions exactly
-
-3. IF INFORMATION IS MISSING
-   - If no models/services/controllers are detected, ASK the user where to create them
-   - If no database is detected, ASK what database they're using
-   - If no framework is detected, ASK what framework they're using
-   - DO NOT make assumptions or hallucinate
-
-4. PROVIDE COMPLETE, WORKING CODE
-   - Include all necessary imports
-   - Follow the detected language (TypeScript vs JavaScript)
-   - Use the detected ORM/database correctly
-   - Include error handling
-   - Match existing code style
+AUTH & UTILITY USAGE RULE:
+- If you use any auth or helper utility (e.g. currentUser, getSession, auth helpers),
+  you MUST verify from the provided file snippets or configuration that it works
+  in the current execution context (API route, server component, client component).
+- If this cannot be verified from the repository context, you MUST present
+  multiple safe options (e.g. using the existing helper vs a framework-native
+  alternative like getServerSession) instead of assuming behavior.
 
 ====================================
 TASK
 ====================================
 
 Action: ${input.action}
-${input.userInput ? `User Request: ${input.userInput}` : ''}
+User Request: ${input.userInput || 'No additional details provided'}
 
-Create a detailed implementation plan that:
-1. Identifies which existing files need to be modified
-2. Specifies which new files need to be created (with exact paths matching existing patterns)
-3. Provides complete code for each change
-4. Explains the reasoning for each step
+====================================
+REQUIRED OUTPUT FORMAT
+====================================
 
-Use ONLY the technologies and patterns detected in the repository above.
+1. CURRENT STATE ANALYSIS
+   - Where this functionality exists today
+   - Relevant files and logic
+
+2. PROBLEM IDENTIFICATION
+   - Exact reason it is broken OR insufficient
+   - Evidence from the code
+
+3. PROPOSED CHANGES
+   - Minimal fix (for "fix" mode)
+   - Structured implementation plan (for "plan"/"implement" mode)
+
+4. FILE IMPACT
+   - Modified files
+   - New files (only if justified)
+
+5. RATIONALE
+   - Why these changes solve the issue
+   - Any assumptions made (must be explicit)
 `;
 
    return prompt;

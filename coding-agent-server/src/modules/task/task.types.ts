@@ -11,46 +11,31 @@ export interface RepoSummary {
   repoUrl: string;
   technologies: {
     languages: string[];
-    frameworks: Array<{ name: string; type: 'backend' | 'frontend' | 'fullstack' }>;
+    frameworks: string[];
+    styling: string[];
+    uiLibraries: string[];
+    stateManagement: string[];
     database: { type: string; orm: string } | null;
     packageManager: string;
-    dependencies: {
-      core: string[];
-      database: string[];
-      framework: string[];
-    };
+    runtime: string;
   };
   fileTree: any; // Complete nested file tree structure
-  fileMap: {
-    models: string[];
-    schemas: string[];
-    services: string[];
-    controllers: string[];
-    routes: string[];
-    middleware: string[];
-    utils: string[];
-    helpers: string[];
-    config: string[];
-    types: string[];
-    interfaces: string[];
-    components: string[];
-    pages: string[];
-    api: string[];
-    hooks: string[];
-    lib: string[];
-    database: string[];
-    migrations: string[];
-    seeds: string[];
-    tests: string[];
-    docs: string[];
+  fileMap: Record<string, string[]>;
+  configContents: Record<string, string>;
+  analysis: {
+    dependencies: Record<string, string[]>;
+    fileInfo: Record<string, {
+      exports: string[];
+      snippet?: string;
+    }>;
   };
   summary: {
     totalModels: number;
     totalServices: number;
-    totalControllers: number;
-    totalRoutes: number;
     totalComponents: number;
-    totalTests: number;
+    totalHooks: number;
+    totalPages: number;
+    totalFiles: number;
   };
   _cached?: boolean;
 }

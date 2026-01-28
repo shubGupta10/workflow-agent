@@ -3,244 +3,199 @@ import { promisify } from 'util';
 
 export const execAsync = promisify(exec);
 
-
 // Complete repository understanding script - extracts full context
 export const INTERNAL_ANALYSIS_SCRIPT = `
 const fs = require('fs');
 const path = require('path');
-const W = '/app';
+const ROOT = process.cwd();
+const MAX_DEPTH = 7;
+const MAX_FILE_SIZE = 250_000;
+const SNIPPET_LINES = 100;
 
-// Ignore patterns
-const IGNORE = ['node_modules', '.git', 'dist', 'build', '.next', 'coverage', '.cache', 'out', 'public/assets'];
+// Directories to ignore
+const IGNORE_DIRS = new Set(['node_modules', '.git', '.next', 'dist', 'build', 'coverage', '.cache', 'out', 'public/assets', '.gemini']);
+const CODE_EXT = ['.js', '.ts', '.tsx', '.jsx', '.mjs', '.cjs'];
 
-// Build complete file tree with metadata
-function buildFileTree(dir, currentPath = '', depth = 0, maxDepth = 5) {
-  if (depth > maxDepth) return null;
-  
+function walk(dir, depth = 0) {
+  if (depth > MAX_DEPTH) return null;
+  const out = {};
   try {
     const items = fs.readdirSync(dir);
-    const tree = {};
-    
-    for (const item of items) {
-      if (IGNORE.some(ig => item === ig || item.startsWith('.'))) continue;
-      
-      const fullPath = path.join(dir, item);
-      const relativePath = currentPath ? path.join(currentPath, item) : item;
-      
+    for (const name of items) {
+      if (IGNORE_DIRS.has(name) || name.startsWith('.')) continue;
+      const full = path.join(dir, name);
       try {
-        const stat = fs.statSync(fullPath);
-        
+        const stat = fs.statSync(full);
         if (stat.isDirectory()) {
-          const subtree = buildFileTree(fullPath, relativePath, depth + 1, maxDepth);
-          if (subtree && Object.keys(subtree).length > 0) {
-            tree[item] = { type: 'directory', children: subtree };
-          }
-        } else if (stat.isFile()) {
-          tree[item] = {
+          const child = walk(full, depth + 1);
+          if (child) out[name] = { type: 'dir', children: child };
+        } else {
+          out[name] = {
             type: 'file',
-            path: relativePath,
+            ext: path.extname(name),
             size: stat.size,
-            ext: path.extname(item)
+            path: full.replace(ROOT + '/', '')
           };
         }
-      } catch (e) {}
+      } catch {}
     }
-    
-    return tree;
-  } catch (e) {
-    return null;
-  }
+  } catch {}
+  return out;
 }
 
-// Categorize files by purpose
-function categorizeFiles(tree, basePath = '') {
-  const categories = {
-    models: [],
-    schemas: [],
-    services: [],
-    controllers: [],
-    routes: [],
-    middleware: [],
-    utils: [],
-    helpers: [],
-    config: [],
-    types: [],
-    interfaces: [],
-    components: [],
-    pages: [],
-    api: [],
-    hooks: [],
-    lib: [],
-    database: [],
-    migrations: [],
-    seeds: [],
-    tests: [],
-    docs: []
-  };
-  
-  function scan(obj, currentPath) {
-    for (const key in obj) {
-      const item = obj[key];
-      const itemPath = currentPath ? \`\${currentPath}/\${key}\` : key;
-      
-      if (item.type === 'file') {
-        const lower = key.toLowerCase();
-        const ext = item.ext;
-        
-        // Categorize by filename patterns
-        if (lower.includes('model') && (ext === '.ts' || ext === '.js')) categories.models.push(itemPath);
-        if (lower.includes('schema') && (ext === '.ts' || ext === '.js')) categories.schemas.push(itemPath);
-        if (lower.includes('service') && (ext === '.ts' || ext === '.js')) categories.services.push(itemPath);
-        if (lower.includes('controller') && (ext === '.ts' || ext === '.js')) categories.controllers.push(itemPath);
-        if (lower.includes('route') && (ext === '.ts' || ext === '.js')) categories.routes.push(itemPath);
-        if (lower.includes('middleware') && (ext === '.ts' || ext === '.js')) categories.middleware.push(itemPath);
-        if (lower.includes('util') && (ext === '.ts' || ext === '.js')) categories.utils.push(itemPath);
-        if (lower.includes('helper') && (ext === '.ts' || ext === '.js')) categories.helpers.push(itemPath);
-        if (lower.includes('config') && (ext === '.ts' || ext === '.js' || ext === '.json')) categories.config.push(itemPath);
-        if (lower.includes('type') && ext === '.ts') categories.types.push(itemPath);
-        if (lower.includes('interface') && ext === '.ts') categories.interfaces.push(itemPath);
-        if (lower.includes('hook') && (ext === '.ts' || ext === '.js' || ext === '.tsx' || ext === '.jsx')) categories.hooks.push(itemPath);
-        if (lower.includes('migration') && (ext === '.ts' || ext === '.js')) categories.migrations.push(itemPath);
-        if (lower.includes('seed') && (ext === '.ts' || ext === '.js')) categories.seeds.push(itemPath);
-        if (lower.includes('test') || lower.includes('spec')) categories.tests.push(itemPath);
-        
-        // Categorize by directory context
-        if (currentPath.includes('component')) categories.components.push(itemPath);
-        if (currentPath.includes('page')) categories.pages.push(itemPath);
-        if (currentPath.includes('api')) categories.api.push(itemPath);
-        if (currentPath.includes('lib')) categories.lib.push(itemPath);
-        if (currentPath.includes('db') || currentPath.includes('database')) categories.database.push(itemPath);
-        if (currentPath.includes('doc')) categories.docs.push(itemPath);
-        
-        // Special files
-        if (key === 'package.json' || key === 'tsconfig.json' || key === 'go.mod' || 
-            key === 'requirements.txt' || key === 'pom.xml' || key === 'Dockerfile' ||
-            key === '.env.example' || key === 'README.md') {
-          categories.config.push(itemPath);
-        }
-      } else if (item.type === 'directory' && item.children) {
-        scan(item.children, itemPath);
-      }
-    }
-  }
-  
-  scan(tree, basePath);
-  
-  // Remove duplicates and sort
-  for (const key in categories) {
-    categories[key] = [...new Set(categories[key])].sort();
-  }
-  
-  return categories;
+function readSafe(file) {
+  try {
+    const stat = fs.statSync(file);
+    if (stat.size > MAX_FILE_SIZE) return null;
+    return fs.readFileSync(file, 'utf8');
+  } catch { return null; }
 }
 
-// Detect technologies from package.json
-function detectTech() {
+function extractImports(code) {
+  const imports = [];
+  const regex = /(import\\s+.*?from\\s+['"](.*?)['"])|(require\\(['"](.*?)['"]\\))/g;
+  let m;
+  while ((m = regex.exec(code))) {
+    const imp = m[2] || m[4];
+    if (imp) imports.push(imp);
+  }
+  return [...new Set(imports)];
+}
+
+function extractExports(code) {
+  const exports = [];
+  const patterns = [
+    /export\\s+(?:const|function|class|interface|type|enum)\\s+(\\w+)/g,
+    /export\\s+default\\s+(?:function|class|interface|type|enum)?\\s*(\\w+)?/g,
+    /module\\.exports\\s*=\\s*{?([\\s\\S]*?)}?/g
+  ];
+  for (const r of patterns) {
+    let m;
+    while ((m = r.exec(code))) {
+      if (m[1]) exports.push(m[1].trim());
+    }
+  }
+  return [...new Set(exports)];
+}
+
+function categorizeFile(filePath) {
+  const lower = filePath.toLowerCase();
+  if (lower.includes('/models/')) return 'models';
+  if (lower.includes('service')) return 'services';
+  if (lower.includes('controller')) return 'controllers';
+  if (lower.includes('route')) return 'routes';
+  if (lower.includes('component')) return 'components';
+  if (lower.includes('hooks/')) return 'hooks';
+  if (lower.includes('context/') || lower.includes('provider')) return 'context';
+  if (lower.includes('lib/')) return 'lib';
+  if (lower.includes('util')) return 'utils';
+  if (lower.includes('type') || lower.includes('interface')) return 'types';
+  if (lower.includes('page') || lower.includes('app/')) return 'pages';
+  return 'other';
+}
+
+function detectTech(pkg) {
   const tech = {
-    languages: new Set(),
+    runtime: 'node',
+    languages: [],
     frameworks: [],
     database: null,
-    packageManager: 'unknown',
-    dependencies: { core: [], database: [], framework: [] }
+    styling: [],
+    uiLibraries: [],
+    stateManagement: [],
+    packageManager: 'unknown'
   };
-  
-  try {
-    const files = fs.readdirSync(W);
-    
-    // Package manager
-    if (files.includes('yarn.lock')) tech.packageManager = 'yarn';
-    else if (files.includes('pnpm-lock.yaml')) tech.packageManager = 'pnpm';
-    else if (files.includes('package-lock.json')) tech.packageManager = 'npm';
-    else if (files.includes('go.mod')) tech.packageManager = 'go modules';
-    else if (files.includes('requirements.txt')) tech.packageManager = 'pip';
-    else if (files.includes('pom.xml')) tech.packageManager = 'maven';
-    
-    // Languages and frameworks from package.json
-    if (files.includes('package.json')) {
-      tech.languages.add('JavaScript');
-      const pkg = JSON.parse(fs.readFileSync(path.join(W, 'package.json'), 'utf8'));
-      const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-      
-      if (deps.typescript) tech.languages.add('TypeScript');
-      
-      // Frameworks
-      if (deps.express) tech.frameworks.push({ name: 'Express', type: 'backend' });
-      if (deps['@nestjs/core']) tech.frameworks.push({ name: 'NestJS', type: 'backend' });
-      if (deps.fastify) tech.frameworks.push({ name: 'Fastify', type: 'backend' });
-      if (deps.next) {
-        const hasApi = fs.existsSync(path.join(W, 'app', 'api')) || fs.existsSync(path.join(W, 'pages', 'api'));
-        tech.frameworks.push({ name: 'Next.js', type: hasApi ? 'fullstack' : 'frontend' });
-      }
-      if (deps.react && !deps.next) tech.frameworks.push({ name: 'React', type: 'frontend' });
-      if (deps.vue) tech.frameworks.push({ name: 'Vue', type: 'frontend' });
-      if (deps.svelte) tech.frameworks.push({ name: 'Svelte', type: 'frontend' });
-      
-      // Database
-      if (deps.mongoose) {
-        tech.database = { type: 'MongoDB', orm: 'Mongoose' };
-        tech.dependencies.database.push('mongoose');
-      } else if (deps.prisma || deps['@prisma/client']) {
-        tech.database = { type: 'Unknown', orm: 'Prisma' };
-        tech.dependencies.database.push('prisma');
-      } else if (deps.typeorm) {
-        tech.database = { type: 'Unknown', orm: 'TypeORM' };
-        tech.dependencies.database.push('typeorm');
-      } else if (deps.pg) {
-        tech.database = { type: 'PostgreSQL', orm: 'none' };
-        tech.dependencies.database.push('pg');
-      } else if (deps.mongodb) {
-        tech.database = { type: 'MongoDB', orm: 'none' };
-        tech.dependencies.database.push('mongodb');
-      }
-      
-      // Core dependencies
-      ['express', 'mongoose', 'cors', 'dotenv', 'axios'].forEach(d => {
-        if (deps[d]) tech.dependencies.core.push(d);
-      });
-      
-      // Framework dependencies
-      ['next', 'react', 'vue', 'svelte'].forEach(d => {
-        if (deps[d]) tech.dependencies.framework.push(d);
-      });
-    }
-    
-    // Other languages
-    if (files.includes('go.mod')) tech.languages.add('Go');
-    if (files.includes('requirements.txt')) tech.languages.add('Python');
-    if (files.includes('pom.xml')) tech.languages.add('Java');
-    if (files.includes('Cargo.toml')) tech.languages.add('Rust');
-    
-  } catch (e) {}
-  
-  return {
-    ...tech,
-    languages: Array.from(tech.languages)
-  };
+
+  if (!pkg) return tech;
+  const d = { ...pkg.dependencies, ...pkg.devDependencies };
+
+  const langs = new Set(['JavaScript']);
+  if (d.typescript) langs.add('TypeScript');
+  tech.languages = Array.from(langs);
+
+  if (fs.existsSync(path.join(ROOT, 'yarn.lock'))) tech.packageManager = 'yarn';
+  else if (fs.existsSync(path.join(ROOT, 'pnpm-lock.yaml'))) tech.packageManager = 'pnpm';
+  else if (fs.existsSync(path.join(ROOT, 'package-lock.json'))) tech.packageManager = 'npm';
+
+  if (d.next) tech.frameworks.push('Next.js');
+  if (d.react && !d.next) tech.frameworks.push('React');
+  if (d.express) tech.frameworks.push('Express');
+  if (d.mongoose) tech.database = { type: 'MongoDB', orm: 'Mongoose' };
+  if (d.prisma) tech.database = { type: 'Unknown', orm: 'Prisma' };
+  if (d.zustand) tech.stateManagement.push('Zustand');
+  if (d.redux) tech.stateManagement.push('Redux');
+  if (d.tailwindcss) tech.styling.push('Tailwind');
+
+  return tech;
 }
 
-// Main execution
-try {
-  const fileTree = buildFileTree(W);
-  const categories = categorizeFiles(fileTree);
-  const tech = detectTech();
-  
-  const understanding = {
-    technologies: tech,
-    fileTree: fileTree,
-    fileMap: categories,
-    summary: {
-      totalModels: categories.models.length,
-      totalServices: categories.services.length,
-      totalControllers: categories.controllers.length,
-      totalRoutes: categories.routes.length,
-      totalComponents: categories.components.length,
-      totalTests: categories.tests.length
-    }
-  };
-  
-  console.log(JSON.stringify(understanding));
-} catch (e) {
-  console.error(e);
-  process.exit(1);
+const tree = walk(ROOT);
+const fileMap = {};
+const fileInfo = {};
+const dependencies = {};
+const configContents = {};
+
+const CONFIG_FILES = [
+  'package.json', 'tsconfig.json', 'tailwind.config.js', 'tailwind.config.ts',
+  'components.json', 'next.config.js', 'next.config.mjs'
+];
+
+for (const cf of CONFIG_FILES) {
+  const content = readSafe(path.join(ROOT, cf));
+  if (content) configContents[cf] = content;
 }
+
+const pkg = configContents['package.json'] ? JSON.parse(configContents['package.json']) : null;
+const tech = detectTech(pkg);
+
+function processNode(node) {
+  for (const k in node) {
+    const v = node[k];
+    if (v.type === 'file' && CODE_EXT.includes(v.ext)) {
+      const cat = categorizeFile(v.path);
+      if (!fileMap[cat]) fileMap[cat] = [];
+      fileMap[cat].push(v.path);
+
+      const code = readSafe(path.join(ROOT, v.path));
+      if (code) {
+        const imports = extractImports(code);
+        const exports = extractExports(code);
+        dependencies[v.path] = imports;
+        
+        const isEntry = ['index.ts', 'main.ts', 'app/page.tsx', 'server.ts'].some(e => v.path.includes(e));
+        const shouldSnippet = isEntry || (fileMap[cat].length <= 3);
+        
+        fileInfo[v.path] = {
+          exports,
+          snippet: shouldSnippet ? code.split('\\n').slice(0, SNIPPET_LINES).join('\\n') : undefined
+        };
+      }
+    } else if (v.type === 'dir') {
+      processNode(v.children);
+    }
+  }
+}
+
+processNode(tree);
+
+const output = {
+  technologies: tech,
+  fileTree: tree,
+  fileMap: fileMap,
+  configContents: configContents,
+  analysis: {
+    dependencies,
+    fileInfo
+  },
+  summary: {
+    totalModels: (fileMap.models || []).length,
+    totalServices: (fileMap.services || []).length,
+    totalComponents: (fileMap.components || []).length,
+    totalHooks: (fileMap.hooks || []).length,
+    totalPages: (fileMap.pages || []).length,
+    totalFiles: Object.keys(fileInfo).length
+  }
+};
+
+console.log(JSON.stringify(output));
 `;
