@@ -87,7 +87,7 @@ export function PlanDisplayCard({ plan, onApprove, onEdit, disabled }: PlanDispl
     const displayedPlan = shouldTruncate ? plan.slice(0, MAX_LENGTH) + "..." : plan;
 
     return (
-        <div className="w-full max-w-2xl space-y-4">
+        <div className="w-full space-y-4">
             <div className="relative bg-background/50 border rounded-xl p-5 overflow-hidden">
                 <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
@@ -156,7 +156,7 @@ export function ReviewDisplayCard({ review }: ReviewDisplayCardProps) {
     const displayedReview = shouldTruncate ? review.slice(0, MAX_LENGTH) + "..." : review;
 
     return (
-        <div className="w-full max-w-2xl">
+        <div className="w-full">
             <div className="relative bg-background/50 border rounded-xl p-5 overflow-hidden">
                 <div className="flex items-center gap-2 mb-3 text-primary font-medium text-sm">
                     <Sparkles className="w-4 h-4" />

@@ -4,14 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useTaskStore } from "@/lib/store/store";
 import { STATUS_LABELS } from "@/lib/types";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock, MessageSquare, Terminal } from "lucide-react";
+import { ArrowRight, Clock, MessageSquare, Terminal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
 
 export function RecentTasksCard() {
-    const { sessions, setActiveSession } = useTaskStore();
+    const { sessions, setActiveSession, fetchSessions, isLoadingTasks } = useTaskStore();
     const router = useRouter();
+
+    useEffect(() => {
+        // Fetch sessions on mount if not already loaded or to refresh
+        fetchSessions();
+    }, [fetchSessions]);
 
     // Get the 3 most recent sessions (excluding empty new tasks)
     const recentSessions = sessions
@@ -27,6 +33,20 @@ export function RecentTasksCard() {
             router.push('/chat');
         }
     };
+
+    if (isLoadingTasks && sessions.length === 0) {
+        return (
+            <Card className="h-full flex flex-col">
+                <CardHeader>
+                    <CardTitle>Recent Tasks</CardTitle>
+                    <CardDescription>Loading your tasks...</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col items-center justify-center p-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary opacity-50" />
+                </CardContent>
+            </Card>
+        );
+    }
 
     if (sessions.length === 0) {
         return (
@@ -99,13 +119,6 @@ export function RecentTasksCard() {
                     ))}
                 </div>
 
-                {recentSessions.length < sessions.length && (
-                    <div className="p-2 border-t bg-muted/5 text-center">
-                        <p className="text-xs text-muted-foreground py-1">
-                            +{sessions.length - recentSessions.length} more older tasks
-                        </p>
-                    </div>
-                )}
             </CardContent>
         </Card>
     );

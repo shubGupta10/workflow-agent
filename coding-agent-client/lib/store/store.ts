@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Session, TaskStatus, ActionType, Message, generateId, TaskDetails } from '@/lib/types';
+import { getSidebarTasks } from '@/lib/api';
 
 interface TaskStore {
     sessions: Session[];
@@ -7,8 +8,10 @@ interface TaskStore {
     currentTaskId: string | null;
     taskDetailsCache: Record<string, TaskDetails>;
 
+    isLoadingTasks: boolean;
     createSession: () => string;
     setSessions: (sessions: Session[]) => void;
+    fetchSessions: () => Promise<void>;
     setActiveSession: (sessionId: string) => void;
     addMessage: (sessionId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
     updateSessionStatus: (sessionId: string, status: TaskStatus) => void;
@@ -26,6 +29,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     activeSessionId: null,
     currentTaskId: null,
     taskDetailsCache: {},
+    isLoadingTasks: false,
 
     createSession: () => {
         const id = generateId();
@@ -46,24 +50,57 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     setSessions: (sessions: Session[]) => {
         set((state) => {
             if (sessions.length === 0) {
-                return state;
+                return { ...state, sessions: [] };
             }
 
             const existingById = new Map(state.sessions.map((session) => [session.id, session]));
 
             const merged = [
-                ...state.sessions,
+                ...state.sessions.filter(s => existingById.has(s.id)), // Keep existing ones that are still relevant
                 ...sessions.filter((session) => !existingById.has(session.id)),
             ];
 
+            // Filter out exact duplicates if any and sort by createdAt
+            const unique = Array.from(new Map(merged.map(s => [s.id, s])).values())
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
             const activeSessionId =
-                state.activeSessionId !== null ? state.activeSessionId : merged[0]?.id ?? null;
+                state.activeSessionId !== null ? state.activeSessionId : unique[0]?.id ?? null;
 
             return {
-                sessions: merged,
+                sessions: unique,
                 activeSessionId,
             };
         });
+    },
+
+    fetchSessions: async () => {
+        const { setSessions } = get();
+        set({ isLoadingTasks: true });
+        try {
+            const response = await getSidebarTasks();
+            const tasks = response?.data ?? [];
+
+            const sessions: Session[] = tasks.map((task: any) => {
+                const repoName = task.repoUrl.split("/").filter(Boolean).slice(-1)[0] ?? "Task";
+
+                return {
+                    id: task.taskId,
+                    taskId: task.taskId,
+                    title: repoName,
+                    status: task.status,
+                    messages: [],
+                    createdAt: new Date(task.createdAt),
+                    selectedAction: task.action,
+                };
+            });
+
+            setSessions(sessions);
+        } catch (error) {
+            console.error("[TaskStore] Failed to fetch sessions:", error);
+        } finally {
+            set({ isLoadingTasks: false });
+        }
     },
 
     setActiveSession: (sessionId: string) => {

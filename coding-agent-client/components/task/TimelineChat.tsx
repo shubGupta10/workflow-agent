@@ -5,6 +5,8 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuthStore } from "@/lib/store/userStore";
 import { formatTimelineContent } from "@/lib/utils/timelineFormat";
 import { CompletionCard } from "./SystemCard";
+import { Bot, User } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TimelineChatProps {
     timeline: TimelineEntry[];
@@ -66,13 +68,18 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
 
         if (role === "user") {
             return (
-                <div key={_id} className="flex justify-end mb-4">
-                    <div className="flex flex-col items-end max-w-[75%]">
-                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-4 py-2.5">
-                            <p className="text-sm">{displayContent}</p>
+                <div key={_id} className="flex flex-row-reverse gap-4 mb-6">
+                    {/* Avatar */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-primary bg-primary text-primary-foreground shadow-sm">
+                        <User className="w-5 h-5" />
+                    </div>
+
+                    <div className="flex flex-col items-end max-w-[75%] min-w-0">
+                        <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm px-5 py-2.5 shadow-sm">
+                            <p className="text-sm leading-relaxed">{displayContent}</p>
                         </div>
-                        <span className="text-xs text-muted-foreground/60 mt-1">
-                            {formatTimestamp(createdAt)}
+                        <span className="text-[10px] text-muted-foreground/60 mt-1.5 px-1 uppercase tracking-tight">
+                            You • {formatTimestamp(createdAt)}
                         </span>
                     </div>
                 </div>
@@ -81,13 +88,18 @@ export function TimelineChat({ timeline }: TimelineChatProps) {
 
         if (role === "agent") {
             return (
-                <div key={_id} className="flex justify-start mb-4">
-                    <div className="flex flex-col items-start max-w-[75%]">
-                        <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-2.5">
-                            <p className="text-sm text-foreground whitespace-pre-wrap">{displayContent}</p>
+                <div key={_id} className="flex flex-row gap-4 mb-6">
+                    {/* Avatar */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 border border-border bg-muted text-muted-foreground shadow-sm">
+                        <Bot className="w-5 h-5" />
+                    </div>
+
+                    <div className="flex flex-col items-start max-w-[75%] min-w-0">
+                        <div className="bg-muted rounded-2xl rounded-tl-sm px-5 py-2.5 shadow-sm">
+                            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{displayContent}</p>
                         </div>
-                        <span className="text-xs text-muted-foreground/60 mt-1">
-                            {formatTimestamp(createdAt)}
+                        <span className="text-[10px] text-muted-foreground/60 mt-1.5 px-1 uppercase tracking-tight">
+                            Coding Agent • {formatTimestamp(createdAt)}
                         </span>
                     </div>
                 </div>

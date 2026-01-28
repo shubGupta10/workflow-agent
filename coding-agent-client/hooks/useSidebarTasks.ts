@@ -16,7 +16,7 @@ interface BackendSidebarTask {
 }
 
 export function useSidebarTasks() {
-  const setSessions = useTaskStore((state) => state.setSessions);
+  const fetchSessions = useTaskStore((state) => state.fetchSessions);
   const removeSessionByTaskId = useTaskStore((state) => state.removeSessionByTaskId);
   const hydratedRef = useRef(false);
 
@@ -24,35 +24,8 @@ export function useSidebarTasks() {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
 
-    const hydrate = async () => {
-      try {
-        const response = await getSidebarTasks();
-        const tasks = (response?.data ?? []) as BackendSidebarTask[];
-
-        const sessions: Session[] = tasks.map((task) => {
-          const repoName = task.repoUrl.split("/").filter(Boolean).slice(-1)[0] ?? "Task";
-
-          return {
-            id: task.taskId,
-            taskId: task.taskId,
-            title: repoName,
-            status: task.status,
-            messages: [],
-            createdAt: new Date(task.createdAt),
-            selectedAction: task.action,
-          };
-        });
-
-        if (sessions.length > 0) {
-          setSessions(sessions);
-        }
-      } catch (error) {
-        console.error("[Sidebar] Failed to hydrate tasks from backend:", error);
-      }
-    };
-
-    hydrate();
-  }, [setSessions]);
+    fetchSessions();
+  }, [fetchSessions]);
 
   const deleteTask = async (taskId: string) => {
     try {
