@@ -56,6 +56,8 @@ const setTaskAction = errorWrapper(
 
         try {
             const updatedTask = await TaskService.setTaskAction(taskId, action, userInput, session);
+            await session.commitTransaction();
+
             res.status(200).json({
                 message: "Task action set successfully",
                 data: updatedTask
@@ -105,10 +107,13 @@ const approvePlan = errorWrapper(
 
         try {
             const updatedTask = await TaskService.approvePlan(taskId, approvedBy, session);
+            await session.commitTransaction();
+
             res.status(200).json({
                 message: "Plan approved successfully",
                 data: updatedTask
             })
+
         } catch (error) {
             await session.abortTransaction();
             throw error;
