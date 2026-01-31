@@ -1,6 +1,7 @@
 import subscriptionModel from "./subscription.model";
 import { SubscriptionTier, SubscriptionStatus } from "./subscription.enum";
 import { SUBSCRIPTION_LIMITS } from "./subscription.config";
+import { ClientSession } from "mongoose";
 
 const createSubscription = async (userId: string) => {
     if (!userId) {
@@ -19,9 +20,9 @@ const createSubscription = async (userId: string) => {
     return subscription;
 }
 
-const getSubscription = async (userId: string) => {
+const getSubscription = async (userId: string, session?: ClientSession) => {
 
-    const subscription = await subscriptionModel.findOne({ userId });
+    const subscription = await subscriptionModel.findOne({ userId }, null, { session });
     if (!subscription) {
         throw new Error("Subscription not found");
     }
@@ -41,10 +42,10 @@ const checkAndResetIfNeeded = async (userId: string): Promise<void> => {
     }
 }
 
-const incrementUsage = async (userId: string): Promise<void> => {
-    const subscription = await getSubscription(userId);
+const incrementUsage = async (userId: string, session?: ClientSession): Promise<void> => {
+    const subscription = await getSubscription(userId, session);
     subscription.taskUsedToday += 1;
-    await subscription.save();
+    await subscription.save({ session });
 }
 
 const checkLimit = async (userId: string): Promise<boolean> => {

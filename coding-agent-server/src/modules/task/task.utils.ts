@@ -8,6 +8,7 @@ import redis, { CACHE_TTL_SECONDS } from "../../lib/redis";
 import { TimelineEnum } from "./task.enum";
 import fs from "fs";
 import path from "path";
+import { ClientSession } from "mongoose";
 
 function normalizeRepoUrl(repoUrl: string) {
     return repoUrl
@@ -22,23 +23,19 @@ function getRepoCacheKey(repoUrl: string) {
     return `repo:summary:v2:${hash}`;
 }
 
-export async function createTaskRecord(taskData: CreateTaskRecordInput) {
+export async function createTaskRecord(taskData: CreateTaskRecordInput, session?: ClientSession) {
     const { repoUrl, status, userId } = taskData;
 
     if (!repoUrl || !status) {
         throw new Error("Missing required fields to create a task record");
     }
 
-    const newTask = await Task.create({
-        repoUrl,
-        status,
-        userId
-    })
+    const newTask = await Task.create([taskData], { session })
 
-    return newTask;
+    return newTask[0];
 }
 
-export async function updateTaskStatus(taskId: string, status: string) {
+export async function updateTaskStatus(taskId: string, status: string, session?: ClientSession) {
     if (!taskId || !status) {
         throw new Error("Missing required fields to update task status");
     }
@@ -46,7 +43,7 @@ export async function updateTaskStatus(taskId: string, status: string) {
     const updatedTask = await Task.findByIdAndUpdate(
         taskId,
         { status },
-        { new: true }
+        { new: true, session: session }
     )
 
     return updatedTask;
@@ -135,12 +132,12 @@ export async function understandRepo(repoUrl: string, taskId: string) {
     }
 }
 
-export async function saveRepoSummary(taskId: string, repoSummary: RepoSummary) {
+export async function saveRepoSummary(taskId: string, repoSummary: RepoSummary, session?: ClientSession) {
     if (!taskId || !repoSummary) {
         throw new Error("Missing required fields to save repo summary");
     }
 
-    const existingTask = await Task.findById(taskId);
+    const existingTask = await Task.findById(taskId, null, { session });
     if (!existingTask) {
         throw new Error("Task not found");
     }
@@ -156,7 +153,7 @@ export async function saveRepoSummary(taskId: string, repoSummary: RepoSummary) 
         createdAt: new Date()
     })
 
-    return await existingTask.save();
+    return await existingTask.save({ session });
 }
 
 export async function generateCodeFromPlan(plan: string, repoUrl: string) {

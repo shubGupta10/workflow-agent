@@ -11,9 +11,10 @@ import { TimelineEnum } from './task.enum';
 import { Task, TaskAction } from './task.model';
 import { CreateTaskRecordInput } from './task.types';
 import { createTaskRecord, fetchPRsDiff, generateCodeFromPlan, saveRepoSummary, understandRepo, updateTaskStatus } from './task.utils';
+import { ClientSession } from 'mongoose';
 
 
-const createTask = async (input: CreateTaskRecordInput) => {
+const createTask = async (input: CreateTaskRecordInput, session?: ClientSession) => {
     const { repoUrl, userId } = input;
 
     //create task
@@ -21,7 +22,7 @@ const createTask = async (input: CreateTaskRecordInput) => {
         repoUrl,
         status: TaskStatus.CREATED,
         userId
-    })
+    }, session)
 
     await Task.findByIdAndUpdate(
         task._id,
@@ -34,30 +35,31 @@ const createTask = async (input: CreateTaskRecordInput) => {
                     createdAt: new Date()
                 }
             }
-        }
+        },
+        { session }
     )
 
     //move to repo understanding
-    await updateTaskStatus(task._id.toString(), TaskStatus.UNDERSTANDING_REPO);
+    await updateTaskStatus(task._id.toString(), TaskStatus.UNDERSTANDING_REPO, session);
 
     //understand repo
     const repoSummary = await understandRepo(repoUrl, task._id.toString());
 
     //persist understanding
-    await saveRepoSummary(task._id.toString(), repoSummary);
+    await saveRepoSummary(task._id.toString(), repoSummary, session);
 
     //ready for user action
-    await updateTaskStatus(task._id.toString(), TaskStatus.AWAITING_ACTION);
+    await updateTaskStatus(task._id.toString(), TaskStatus.AWAITING_ACTION, session);
 
     return task._id.toString();
 }
 
-const setTaskAction = async (taskId: string, action: string, userInput: string) => {
+const setTaskAction = async (taskId: string, action: string, userInput: string, session?: ClientSession) => {
     if (!taskId || !action) {
         throw new Error("Missing required fields to set task action");
     }
 
-    const existingTask = await Task.findById(taskId);
+    const existingTask = await Task.findById(taskId, null, { session });
     if (!existingTask) {
         throw new Error("Task not found");
     }
@@ -73,7 +75,7 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
             userInput: userInput,
             status: TaskStatus.PLANNING
         },
-        { new: true }
+        { new: true, session }
     )
 
     await Task.findByIdAndUpdate(
@@ -83,7 +85,7 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
             userInput: userInput,
             status: TaskStatus.PLANNING
         },
-        { new: true }
+        { new: true, session }
     )
 
     //add timeline entry
@@ -98,13 +100,14 @@ const setTaskAction = async (taskId: string, action: string, userInput: string) 
                     createdAt: new Date()
                 }
             }
-        }
+        },
+        { session }
     )
 
     return updatedTask;
 }
 
-const generatePlan = async function* (taskId: string, modelId?: string) {
+const generatePlan = async function* (taskId: string, modelId?: string, session?: ClientSession) {
 
     // fetch Task by taskId
     if (!taskId) {
@@ -112,7 +115,7 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
     }
 
     //  ensure task.status == PLANNING
-    const existingTask = await Task.findById(taskId);
+    const existingTask = await Task.findById(taskId, null, { session });
     if (!existingTask) {
         throw new Error("Task not found");
     }
@@ -155,7 +158,7 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
                     executionLog: { message: "Review retrieved from cache. No execution required." },
                     status: TaskStatus.COMPLETED,
                     updatedAt: new Date()
-                });
+                }, { session });
 
                 fullText = cacheReview;
                 model = 'cached';
@@ -252,7 +255,7 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
                     : undefined,
             updatedAt: new Date(),
         },
-        { new: true }
+        { new: true, session }
     )
 
     await Task.findByIdAndUpdate(
@@ -266,20 +269,20 @@ const generatePlan = async function* (taskId: string, modelId?: string) {
                     createdAt: new Date()
                 }
             }
-        }
+        }, { session }
     )
 
     return fullText;
 }
 
-const approvePlan = async (taskId: string, approvedBy: string) => {
+const approvePlan = async (taskId: string, approvedBy: string, session?: ClientSession) => {
     //  validate inputs
     if (!taskId || !approvedBy) {
         throw new Error("Missing required fields to approve plan");
     }
 
     //fetch task by its taskId
-    const existingTask = await Task.findById(taskId);
+    const existingTask = await Task.findById(taskId, null, { session });
     if (!existingTask) {
         throw new Error("Task not found");
     }
@@ -308,7 +311,7 @@ const approvePlan = async (taskId: string, approvedBy: string) => {
         createdAt: new Date()
     })
 
-    await existingTask.save();
+    await existingTask.save({ session });
 
     return existingTask;
 }
@@ -527,12 +530,12 @@ const deleteTask = async (taskId: string) => {
     return true;
 }
 
-const taskDetails = async (taskId: string) => {
+const taskDetails = async (taskId: string, session?: ClientSession) => {
     if (!taskId) {
         throw new Error("TaskId is required to fetch task details");
     }
 
-    const task = await Task.findById(taskId);
+    const task = await Task.findById(taskId, null, { session });
     if (!task) {
         throw new Error("Task not found");
     }

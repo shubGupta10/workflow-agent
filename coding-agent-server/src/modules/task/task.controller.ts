@@ -3,45 +3,69 @@ import { errorWrapper } from "../../middleware/errorWrapper";
 import { TaskService } from "./task.service";
 import { AuthRequest } from "../../middleware/auth.middleware";
 import { subscriptionService } from "../subscription/subscription.service";
+import mongoose from "mongoose";
 
 const createTask = errorWrapper(
     async (req: AuthRequest, res: Response) => {
         const { repoUrl, action, userInput } = req.body;
         const userId = req.user.userId;
 
-        const taskId = await TaskService.createTask({ repoUrl, userId });
+        const session = await mongoose.startSession();
+        session.startTransaction();
 
-        await subscriptionService.incrementUsage(userId);
+        try {
 
-        let responseData;
-        if (action) {
-            const updatedTask = await TaskService.setTaskAction(taskId, action, userInput);
-            responseData = {
-                taskId: updatedTask._id.toString(),
-                status: updatedTask.status,
-                action: updatedTask.action,
-                userInput: updatedTask.userInput
-            };
-        } else {
-            const taskDetails = await TaskService.taskDetails(taskId);
-            responseData = taskDetails;
+            const taskId = await TaskService.createTask({ repoUrl, userId }, session);
+
+            await subscriptionService.incrementUsage(userId, session);
+
+            let responseData;
+            if (action) {
+                const updatedTask = await TaskService.setTaskAction(taskId, action, userInput, session);
+                responseData = {
+                    taskId: updatedTask._id.toString(),
+                    status: updatedTask.status,
+                    action: updatedTask.action,
+                    userInput: updatedTask.userInput
+                };
+            } else {
+                const taskDetails = await TaskService.taskDetails(taskId, session);
+                responseData = taskDetails;
+            }
+            await session.commitTransaction();
+
+            res.status(201).json({
+                message: "Task created successfully",
+                data: responseData
+            })
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
         }
-
-        res.status(201).json({
-            message: "Task created successfully",
-            data: responseData
-        })
     }
 )
 
 const setTaskAction = errorWrapper(
     async (req: AuthRequest, res: Response) => {
         const { taskId, action, userInput } = req.body;
-        const updatedTask = await TaskService.setTaskAction(taskId, action, userInput);
-        res.status(200).json({
-            message: "Task action set successfully",
-            data: updatedTask
-        })
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            const updatedTask = await TaskService.setTaskAction(taskId, action, userInput, session);
+            res.status(200).json({
+                message: "Task action set successfully",
+                data: updatedTask
+            })
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
+        }
     }
 )
 
@@ -75,11 +99,22 @@ const generatePlan = errorWrapper(
 const approvePlan = errorWrapper(
     async (req: AuthRequest, res: Response) => {
         const { taskId, approvedBy } = req.body;
-        const updatedTask = await TaskService.approvePlan(taskId, approvedBy);
-        res.status(200).json({
-            message: "Plan approved successfully",
-            data: updatedTask
-        })
+
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            const updatedTask = await TaskService.approvePlan(taskId, approvedBy, session);
+            res.status(200).json({
+                message: "Plan approved successfully",
+                data: updatedTask
+            })
+        } catch (error) {
+            await session.abortTransaction();
+            throw error;
+        } finally {
+            session.endSession();
+        }
     }
 )
 
