@@ -1,6 +1,9 @@
 import { execAsync } from '../../constants/repoIngest';
 import octokit, { createOctokit } from '../Octokit';
 import { runSandboxCommand } from '../sandbox/sandBoxUtils';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 
 function extractRepoName(repoUrl: string): string {
@@ -13,20 +16,20 @@ function extractRepoName(repoUrl: string): string {
 
 function getAuthenticatedRepoUrl(repoUrl: string, token?: string): string {
     if (!token) return repoUrl;
-    
+
     // Convert HTTPS URL to authenticated URL
     // https://github.com/user/repo.git -> https://token@github.com/user/repo.git
     const urlMatch = repoUrl.match(/^https:\/\/github\.com\/(.+)$/);
     if (urlMatch) {
         return `https://${token}@github.com/${urlMatch[1]}`;
     }
-    
+
     return repoUrl;
 }
 
 export async function cloneRepoInSandbox(containerName: string, repoUrl: string, githubToken?: string) {
     const authUrl = getAuthenticatedRepoUrl(repoUrl, githubToken);
-    
+
     // 1. Clone
     await runSandboxCommand(containerName, `git clone ${authUrl}`);
 
@@ -35,7 +38,7 @@ export async function cloneRepoInSandbox(containerName: string, repoUrl: string,
     await runSandboxCommand(containerName, `cd ${repoName} && git config user.email "agent@bot.com"`);
     await runSandboxCommand(containerName, `cd ${repoName} && git config user.name "Coding Agent"`);
 
-    return repoName; 
+    return repoName;
 }
 
 export async function createAndCheckoutBranch(containerName: string, branchName: string, repoName: string) {
@@ -58,21 +61,21 @@ export async function checkGitStatus(containerName: string, repoName: string): P
 export async function commitChange(containerName: string, message: string, repoName: string): Promise<{ committed: boolean, message: string }> {
     // Check if there are any changes to commit
     const hasChanges = await checkGitStatus(containerName, repoName);
-    
+
     if (!hasChanges) {
-        return { 
-            committed: false, 
-            message: 'No changes detected in working tree' 
+        return {
+            committed: false,
+            message: 'No changes detected in working tree'
         };
     }
-    
+
     // Only add and commit if there are changes
     await runSandboxCommand(containerName, `cd ${repoName} && git add .`);
     await runSandboxCommand(containerName, `cd ${repoName} && git commit -m "${message}"`);
-    
-    return { 
-        committed: true, 
-        message: 'Changes committed successfully' 
+
+    return {
+        committed: true,
+        message: 'Changes committed successfully'
     };
 }
 
@@ -83,40 +86,40 @@ export async function pushBranch(containerName: string, branchName: string, repo
     }
 
     const remoteUrl = await runSandboxCommand(containerName, `cd ${repoName} && git remote get-url origin`);
-    
+
     // Parse remote URL to extract owner/repo (e.g., github.com/owner/repo.git or github.com/owner/repo)
     const match = remoteUrl.trim().match(/github\.com[\/:]([^\/]+)\/(.+?)(\.git)?$/);
     if (!match) throw new Error("Could not parse remote URL");
-    
+
     const owner = match[1];
     const repo = match[2];
-    
+
     // Configure git credential helper to use the token
     // Using 'x-access-token' as username is a GitHub-recommended approach for tokens
     const authUrl = `https://x-access-token:${githubToken}@github.com/${owner}/${repo}.git`;
-    
+
     // Store credentials temporarily in git config for this operation
     await runSandboxCommand(containerName, `cd ${repoName} && git config credential.helper store`);
-    
+
     // Push using authenticated URL
     await runSandboxCommand(containerName, `cd ${repoName} && git push "${authUrl}" ${branchName}`);
 }
 
 export async function applyFileChanges(containerName: string, filePath: string, content: string, repoName: string) {
-    const base64Content = Buffer.from(content).toString('base64');
+    const tempFileName = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}.txt`;
+    const tempFilePath = path.join(os.tmpdir(), tempFileName);
 
-    const fullPath = `${repoName}/${filePath}`;
-
-    const writeScript = `
-      const fs = require('fs');
-      const path = require('path');
-      const target = '${fullPath}';
-      const content = Buffer.from('${base64Content}', 'base64');
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, content);
-    `;
-
-    await execAsync(`docker exec -i ${containerName} node -e "${writeScript.replace(/\n/g, ' ')}"`);
+    try {
+        await fs.promises.writeFile(tempFilePath, content);
+        const containerPath = `/app/${repoName}/${filePath}`;
+        const containerDir = path.posix.dirname(containerPath);
+        await runSandboxCommand(containerName, `mkdir -p "${containerDir}"`);
+        await execAsync(`docker cp "${tempFilePath}" ${containerName}:"${containerPath}"`);
+    } finally {
+        try {
+            await fs.promises.unlink(tempFilePath);
+        } catch { }
+    }
 }
 
 export async function createPullRequest(

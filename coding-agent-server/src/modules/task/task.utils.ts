@@ -229,7 +229,6 @@ export async function generateCodeFromPlan(plan: string, repoUrl: string) {
     try {
         const parsed = JSON.parse(cleanJson);
 
-        // Validate the structure
         if (!Array.isArray(parsed)) {
             throw new Error("Response is not an array");
         }
@@ -246,7 +245,6 @@ export async function generateCodeFromPlan(plan: string, repoUrl: string) {
         console.error('[ERROR] JSON Parse Error:', e.message);
         console.error('[ERROR] Failed JSON (first 1000 chars):', cleanJson.substring(0, 1000));
 
-        // Try to provide a helpful error message
         const match = e.message.match(/position (\d+)/);
         if (match) {
             const pos = parseInt(match[1]);
@@ -254,7 +252,55 @@ export async function generateCodeFromPlan(plan: string, repoUrl: string) {
             console.error(`[ERROR] Error near position ${pos}: ...${context}...`);
         }
 
-        throw new Error(`Failed to parse LLM response as JSON: ${e.message}. Check server logs for details.`);
+        console.log('[REPAIR] Attempting to fix unescaped newlines in content fields...');
+        try {
+            let repaired = '';
+            let i = 0;
+            let inString = false;
+            let stringStart = -1;
+            let isContentValue = false;
+
+            while (i < cleanJson.length) {
+                const char = cleanJson[i];
+
+                if (char === '"' && (i === 0 || cleanJson[i - 1] !== '\\')) {
+                    if (!inString) {
+                        const lookBehind = cleanJson.substring(Math.max(0, i - 12), i);
+                        if (lookBehind.trim().endsWith('"content":')) {
+                            isContentValue = true;
+                        }
+                        inString = true;
+                        stringStart = i;
+                        repaired += char;
+                    } else {
+                        inString = false;
+                        repaired += char;
+                        isContentValue = false;
+                    }
+                } else if (inString && isContentValue) {
+                    if (char === '\n') {
+                        repaired += '\\n';
+                    } else if (char === '\r') {
+                        repaired += '\\r';
+                    } else if (char === '\t') {
+                        repaired += '\\t';
+                    } else {
+                        repaired += char;
+                    }
+                } else {
+                    repaired += char;
+                }
+
+                i++;
+            }
+
+            const repairedParsed = JSON.parse(repaired);
+            console.log('[REPAIR] Successfully repaired and parsed JSON');
+            return repairedParsed;
+        } catch (repairError: any) {
+            console.error('[REPAIR] Failed to repair JSON:', repairError.message);
+            throw new Error(`Failed to parse LLM response as JSON: ${e.message}. Check server logs for details.`);
+        }
     }
 }
 
