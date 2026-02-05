@@ -1,52 +1,24 @@
-"use client";
-
-import { UsageStatsCard } from "@/components/dashboard/UsageStatsCard";
+// ... imports ...
+import { QuickActionsCard } from "@/components/dashboard/QuickActionsCard";
 import { RecentTasksCard } from "@/components/dashboard/RecentTasksCard";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useTaskStore } from "@/lib/store/store";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { UsageStatsCard } from "@/components/dashboard/UsageStatsCard";
+import { QuotaProgressBar } from "@/components/dashboard/QuotaProgressBar";
+// ... other dashboard components ...
 
 export default function DashboardPage() {
-    const { createSession } = useTaskStore();
-    const router = useRouter();
-    const [greeting, setGreeting] = useState("Welcome back");
+  return (
+    <div className="container mx-auto py-8 px-4"> // Assuming a main container
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
 
-    useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) setGreeting("Good morning");
-        else if (hour < 18) setGreeting("Good afternoon");
-        else setGreeting("Good evening");
-    }, []);
-
-    const handleNewTask = () => {
-        createSession();
-        router.push('/chat');
-    };
-
-    return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground mb-1 tracking-tight">{greeting}</h1>
-                    <p className="text-muted-foreground">
-                        Ready to build something new today?
-                    </p>
-                </div>
-                <Button onClick={handleNewTask} className="shadow-sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Task
-                </Button>
-            </div>
-
-            <div className="grid gap-6">
-                {/* Usage Stats - Prominent at the top */}
-                <UsageStatsCard />
-
-                {/* Recent Tasks - Main list */}
-                <RecentTasksCard />
-            </div>
-        </div>
-    );
+      // This is the main area to apply responsive grid classes
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {/* Example Dashboard Components */}
+        <QuickActionsCard />
+        <RecentTasksCard />
+        <UsageStatsCard />
+        <QuotaProgressBar />
+        {/* ... other dashboard components ... */}
+      </div>
+    </div>
+  );
 }
